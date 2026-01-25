@@ -1,0 +1,790 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Heart, 
+  FileText, 
+  Image as ImageIcon, 
+  Music, 
+  X, 
+  Minus, 
+  Maximize2,
+  MessageCircle,
+  Gift,
+  Smile,
+  Calendar,
+  Settings,
+  Unlock,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Send,
+  Coffee,
+  Cpu,
+  Globe,
+  AlertTriangle,
+  RefreshCw,
+  Trash2,
+  Star,
+  Sparkles
+} from 'lucide-react';
+
+/* --- LOVE OS v3.0 (CUTE EDITION) --- 
+   Features: Draggable Icons + Floating Hearts + Soft Aesthetic
+*/
+
+// --- Styling Constants ---
+const GLASS_STYLE = "bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(255,105,180,0.15)] rounded-3xl";
+const POP_BUTTON = "transform active:scale-90 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:rotate-1";
+
+// --- Animated Background Component ---
+const FloatingHearts = () => {
+  const [hearts, setHearts] = useState([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHearts(current => {
+        const newHeart = {
+          id: Date.now(),
+          left: Math.random() * 100,
+          animationDuration: 10 + Math.random() * 10,
+          size: 10 + Math.random() * 15,
+          opacity: 0.3 + Math.random() * 0.5
+        };
+        // Keep limited number of hearts
+        const filtered = current.filter(h => Date.now() - h.id < h.animationDuration * 1000);
+        return [...filtered, newHeart];
+      });
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {hearts.map(h => (
+        <div
+          key={h.id}
+          className="absolute text-pink-300 pointer-events-none select-none"
+          style={{
+            left: `${h.left}%`,
+            bottom: '-20px',
+            fontSize: `${h.size}px`,
+            opacity: h.opacity,
+            animation: `floatUp ${h.animationDuration}s linear forwards`
+          }}
+        >
+          {Math.random() > 0.5 ? '❤️' : '💖'}
+        </div>
+      ))}
+      <style>{`
+        @keyframes floatUp {
+          0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+          10% { opacity: 1; }
+          100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// --- Utility Components ---
+
+const CuteButton = ({ children, onClick, className = "", variant = "primary" }) => {
+  const baseStyle = "px-4 py-2 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 " + POP_BUTTON;
+  const variants = {
+    primary: "bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-pink-200",
+    secondary: "bg-white text-pink-500 hover:bg-pink-50 border-2 border-pink-100",
+    ghost: "bg-transparent hover:bg-white/40 text-gray-600",
+    icon: "p-2 rounded-full hover:bg-white/60 text-pink-500 bg-white/40 backdrop-blur-sm",
+    danger: "bg-red-400 text-white hover:bg-red-500"
+  };
+
+  return (
+    <button onClick={onClick} className={`${baseStyle} ${variants[variant] || variants.primary} ${className}`}>
+      {children}
+    </button>
+  );
+};
+
+const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    onFocus();
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        onMove(id, {
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        });
+      }
+    };
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, id, onMove]);
+
+  return (
+    <div
+      onMouseDown={onFocus}
+      style={{ left: position.x, top: position.y, zIndex: isActive ? 50 : 10 }}
+      className={`absolute w-80 md:w-96 flex flex-col overflow-hidden transition-all duration-300 ${GLASS_STYLE} ${isActive ? 'scale-100 shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'scale-[0.98] opacity-90'}`}
+    >
+      {/* Title Bar */}
+      <div 
+        onMouseDown={handleMouseDown}
+        className="h-12 flex justify-between items-center px-4 cursor-move bg-pink-50/50 border-b border-pink-100/50 select-none"
+      >
+        <span className="font-bold text-gray-600 text-sm flex items-center gap-2">
+           <Heart size={14} className="text-pink-400 fill-pink-400" /> {title}
+        </span>
+        <div className="flex gap-2 group">
+          <button onClick={(e) => { e.stopPropagation(); onMinimize(); }} className="w-3 h-3 rounded-full bg-yellow-300 hover:scale-125 transition-transform shadow-sm" />
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="w-3 h-3 rounded-full bg-red-300 hover:scale-125 transition-transform shadow-sm" />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto max-h-[60vh] text-gray-600 relative bg-white/40">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// --- Applications ---
+
+const NotesApp = () => (
+  <div className="p-6 bg-yellow-50/50 h-full min-h-[300px] font-serif text-gray-700 relative">
+    <div className="absolute top-0 left-0 w-full h-8 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)] opacity-50"></div>
+    <div className="flex justify-center mb-4">
+      <div className="bg-pink-100/50 px-3 py-1 rounded-full text-xs text-pink-500 font-bold uppercase tracking-widest">Love Letter</div>
+    </div>
+    <h2 className="text-3xl font-bold text-pink-500 mb-6 text-center italic">My Dearest,</h2>
+    <p className="leading-relaxed mb-4 text-lg">
+      I wanted to make something that feels as beautiful as you make my life feel. 
+    </p>
+    <p className="leading-relaxed mb-4 text-lg">
+      Every pixel here was coded with you in mind. You're my favorite notification, my best view, and my home screen.
+    </p>
+    <div className="mt-8 flex justify-end">
+       <div className="rotate-3">
+          <p className="font-bold text-pink-400 text-xl font-handwriting">Love,</p>
+          <p className="font-bold text-gray-600">Your Dev Boyfriend</p>
+       </div>
+    </div>
+  </div>
+);
+
+const RecycleBinApp = () => (
+  <div className="p-8 h-full flex flex-col items-center justify-center text-center">
+    <div className="w-28 h-28 bg-white/50 rounded-full flex items-center justify-center mb-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] ring-4 ring-white">
+      <Trash2 size={48} className="text-pink-300" />
+    </div>
+    <h2 className="text-xl font-bold text-gray-600 mb-2">My Love for You</h2>
+    <p className="text-gray-500 max-w-xs text-sm bg-red-50 p-4 rounded-xl border border-red-100">
+      <strong className="text-red-400 block mb-1">Warning:</strong> 
+      Cannot delete. This file is write-protected and infinitely large.
+    </p>
+    <div className="mt-8 text-xs text-gray-400 font-mono">Status: PERMANENT</div>
+  </div>
+);
+
+const GalleryApp = () => {
+  const photos = [
+    { color: "bg-rose-200", caption: "First Date 🍝" },
+    { color: "bg-blue-200", caption: "Beach Day 🌊" },
+    { color: "bg-purple-200", caption: "Hiking 🌲" },
+    { color: "bg-yellow-200", caption: "Just Us ❤️" },
+  ];
+
+  return (
+    <div className="p-4 grid grid-cols-2 gap-4 h-full">
+      {photos.map((p, i) => (
+        <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white p-2 hover:-rotate-2 hover:scale-105 z-0 hover:z-10">
+          <div className={`w-full h-full rounded-xl ${p.color} opacity-80 group-hover:opacity-100 transition-opacity`}>
+            {/* Replace with <img src="..." className="w-full h-full object-cover rounded-xl" /> */}
+            <div className="w-full h-full flex items-center justify-center text-white/50">
+              <ImageIcon />
+            </div>
+          </div>
+          <div className="absolute inset-x-2 bottom-2 bg-white/90 backdrop-blur-sm rounded-lg py-2 flex items-center justify-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+            <span className="text-gray-600 text-xs font-bold">
+              {p.caption}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const MusicApp = () => (
+  <div className="bg-gradient-to-br from-indigo-400/90 to-purple-400/90 p-6 text-white h-full flex flex-col items-center justify-center relative overflow-hidden">
+    
+    <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] mb-8 bg-white/20 backdrop-blur-md flex items-center justify-center animate-[spin_8s_linear_infinite]">
+      <Music size={56} className="text-white" />
+    </div>
+    
+    <div className="text-center mb-8">
+      <h3 className="text-2xl font-bold tracking-tight">Perfect</h3>
+      <p className="text-white/80 text-sm font-medium tracking-widest uppercase mt-1">Ed Sheeran</p>
+    </div>
+
+    <div className="w-full bg-white/20 rounded-full h-1.5 mb-2 overflow-hidden">
+      <div className="h-full w-1/3 bg-white rounded-full shadow-[0_0_10px_white]"></div>
+    </div>
+    <div className="flex justify-between w-full text-[10px] font-bold text-white/60 mb-8 uppercase tracking-wider">
+      <span>1:12</span>
+      <span>4:23</span>
+    </div>
+
+    <div className="flex items-center gap-8">
+      <button className="hover:text-pink-200 transition-colors transform hover:scale-110"><SkipBack fill="currentColor" size={24} /></button>
+      <button className="w-16 h-16 bg-white text-purple-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all active:scale-95">
+        <Play fill="currentColor" className="ml-1" size={28} />
+      </button>
+      <button className="hover:text-pink-200 transition-colors transform hover:scale-110"><SkipForward fill="currentColor" size={24} /></button>
+    </div>
+  </div>
+);
+
+const CouponApp = () => {
+  const [coupons, setCoupons] = useState([
+    { id: 1, title: "Back Massage", icon: "💆‍♀️", redeemed: false },
+    { id: 2, title: "Dinner Date", icon: "🍝", redeemed: false },
+    { id: 3, title: "Movie Night", icon: "🎬", redeemed: false },
+    { id: 4, title: "Yes Day", icon: "✨", redeemed: false },
+  ]);
+
+  const redeem = (id) => {
+    setCoupons(c => c.map(cp => cp.id === id ? { ...cp, redeemed: true } : cp));
+  };
+
+  return (
+    <div className="p-6 h-full overflow-y-auto">
+      <div className="text-center mb-6">
+        <div className="inline-block p-3 bg-pink-100 rounded-full mb-2">
+            <Gift size={24} className="text-pink-500" />
+        </div>
+        <h3 className="text-gray-700 font-bold text-lg">Love Coupons</h3>
+        <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Tap to redeem a treat!</p>
+      </div>
+      <div className="space-y-4">
+        {coupons.map(c => (
+          <div key={c.id} className={`group relative p-4 rounded-2xl border-2 border-dashed transition-all duration-300 ${c.redeemed ? 'border-gray-200 bg-gray-50 opacity-60 grayscale' : 'border-pink-200 bg-white hover:border-pink-400 hover:shadow-lg hover:-translate-y-1'}`}>
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-4">
+                <span className="text-3xl bg-gray-50 w-12 h-12 flex items-center justify-center rounded-full shadow-sm">{c.icon}</span>
+                <div>
+                    <span className={`font-bold block ${c.redeemed ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{c.title}</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">{c.redeemed ? 'Redeemed' : 'Valid Forever'}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => !c.redeemed && redeem(c.id)}
+                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${c.redeemed ? 'bg-transparent text-gray-400 cursor-default border border-gray-200' : 'bg-pink-500 text-white hover:bg-pink-600 shadow-md hover:shadow-lg shadow-pink-200'}`}
+              >
+                {c.redeemed ? 'Used' : 'Use'}
+              </button>
+            </div>
+            {/* Decoration */}
+            <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-100 rounded-full"></div>
+            <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-100 rounded-full"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ChatApp = () => (
+  <div className="flex flex-col h-full bg-white/50">
+    <div className="p-4 border-b border-gray-100/50 flex items-center gap-3 bg-white/40 backdrop-blur-md">
+      <div className="relative">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-300 to-purple-300 flex items-center justify-center text-white font-bold shadow-md">BF</div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+      </div>
+      <div>
+        <h4 className="font-bold text-sm text-gray-700">Boyfriend ❤️</h4>
+        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Always Online</span>
+      </div>
+    </div>
+    <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <div className="flex justify-start">
+        <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
+          Happy Valentine's Day babe! 🌹
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="bg-gradient-to-r from-pink-500 to-rose-400 text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-md shadow-pink-200 max-w-[85%] text-sm">
+          Aww thank you! I love you! ❤️
+        </div>
+      </div>
+      <div className="flex justify-start">
+        <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
+          I made this website just for you. Hope you like it! <br/>
+          Try dragging the icons around!
+        </div>
+      </div>
+    </div>
+    <div className="p-3 border-t border-gray-100/50 flex gap-2 bg-white/40">
+      <input type="text" placeholder="Send a message..." disabled className="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none shadow-sm text-gray-500 border border-gray-100" />
+      <button className="w-9 h-9 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-lg shadow-pink-200 hover:scale-110 transition-transform">
+        <Send size={16} className="ml-0.5" />
+      </button>
+    </div>
+  </div>
+);
+
+const SnakeGameApp = () => {
+  const GRID_SIZE = 15;
+  const INITIAL_SNAKE = [{ x: 7, y: 7 }];
+  const [snake, setSnake] = useState(INITIAL_SNAKE);
+  const [food, setFood] = useState({ x: 10, y: 10 });
+  const [dir, setDir] = useState({ x: 1, y: 0 }); 
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const gameLoopRef = useRef();
+
+  const moveSnake = () => {
+    if (gameOver) return;
+
+    setSnake(prev => {
+      const newHead = { x: prev[0].x + dir.x, y: prev[0].y + dir.y };
+
+      if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+        setGameOver(true);
+        return prev;
+      }
+      if (prev.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+        setGameOver(true);
+        return prev;
+      }
+
+      const newSnake = [newHead, ...prev];
+      if (newHead.x === food.x && newHead.y === food.y) {
+        setScore(s => s + 1);
+        setFood({
+          x: Math.floor(Math.random() * GRID_SIZE),
+          y: Math.floor(Math.random() * GRID_SIZE)
+        });
+      } else {
+        newSnake.pop(); 
+      }
+      return newSnake;
+    });
+  };
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      switch(e.key) {
+        case 'ArrowUp': if(dir.y === 0) setDir({x:0, y:-1}); break;
+        case 'ArrowDown': if(dir.y === 0) setDir({x:0, y:1}); break;
+        case 'ArrowLeft': if(dir.x === 0) setDir({x:-1, y:0}); break;
+        case 'ArrowRight': if(dir.x === 0) setDir({x:1, y:0}); break;
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [dir]);
+
+  useEffect(() => {
+    if (!gameOver) {
+      gameLoopRef.current = setInterval(moveSnake, 200);
+    }
+    return () => clearInterval(gameLoopRef.current);
+  }, [dir, gameOver, food]); 
+
+  const restart = () => {
+    setSnake(INITIAL_SNAKE);
+    setScore(0);
+    setGameOver(false);
+    setDir({ x: 1, y: 0 });
+  };
+
+  return (
+    <div className="bg-white/50 p-4 h-full flex flex-col items-center justify-center">
+      <div className="mb-4 flex justify-between w-full px-4 items-center max-w-[300px]">
+        <span className="font-bold text-pink-500 bg-pink-100 px-3 py-1 rounded-full text-xs uppercase tracking-wide">Score: {score}</span>
+        <button onClick={restart} className="text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm text-gray-400 hover:text-pink-500 uppercase tracking-wide border border-gray-100 hover:border-pink-200 transition-colors">Restart</button>
+      </div>
+      
+      <div 
+        className="relative bg-white rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-4 border-white overflow-hidden ring-4 ring-pink-100"
+        style={{ width: GRID_SIZE * 18, height: GRID_SIZE * 18 }}
+      >
+        {snake.map((seg, i) => (
+          <div 
+            key={i}
+            className="absolute bg-gradient-to-br from-pink-400 to-rose-400 rounded-sm shadow-sm"
+            style={{ 
+              left: seg.x * 18, 
+              top: seg.y * 18, 
+              width: 17, 
+              height: 17,
+              opacity: 1 - (i / snake.length) * 0.4,
+              borderRadius: i === 0 ? '4px 4px 2px 2px' : '2px'
+            }} 
+          />
+        ))}
+        <div 
+          className="absolute flex items-center justify-center text-sm animate-bounce drop-shadow-md"
+          style={{ left: food.x * 18, top: food.y * 18, width: 18, height: 18 }}
+        >
+          ❤️
+        </div>
+        
+        {gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm flex-col z-10">
+            <span className="text-rose-500 font-black mb-2 text-2xl tracking-tight">GAME OVER</span>
+            <CuteButton onClick={restart}>Try Again</CuteButton>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-gray-400 mt-4 font-medium uppercase tracking-widest bg-white/50 px-3 py-1 rounded-full">Arrow Keys to Move</p>
+    </div>
+  );
+};
+
+const BrowserApp = () => (
+  <div className="flex flex-col h-full bg-white/80">
+    {/* Browser Bar */}
+    <div className="p-3 bg-white/80 border-b border-gray-100 flex items-center gap-3 shadow-sm z-10 backdrop-blur-md">
+      <div className="flex gap-1.5 mr-2">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-300"></div>
+        <div className="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
+        <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+      </div>
+      <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-full px-4 py-1.5 text-xs text-gray-400 flex items-center gap-2 font-mono">
+        <Unlock size={10} className="text-pink-300" />
+        <span>lovelanguage.com/reasons-why</span>
+      </div>
+      <RefreshCw size={14} className="text-gray-400 hover:rotate-180 transition-transform duration-500 cursor-pointer" />
+    </div>
+
+    {/* Web Content */}
+    <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-white to-gray-50">
+      <div className="max-w-md mx-auto">
+          <h1 className="text-3xl font-bold text-gray-800 mb-8 border-b-4 border-pink-100 pb-2 inline-block">Top Reasons <span className="text-pink-500">I ❤️ U</span></h1>
+          
+          <div className="space-y-6">
+            <div className="flex gap-5 items-start group">
+              <div className="w-10 h-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">1</div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-gray-700 mb-1">Your Smile (v2.0)</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">It literally lights up the room. No CSS required.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-5 items-start group">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">2</div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-gray-700 mb-1">Debugging Life</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">You help me fix my problems even when I don't have a console log.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-5 items-start group">
+              <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">3</div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-gray-700 mb-1">Comfy Mode</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">You look beautiful in a dress, but even better in my hoodie.</p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 mt-10 text-center">
+              <div className="mx-auto bg-white w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-sm text-2xl">🍪</div>
+              <h4 className="text-blue-600 font-bold mb-1 text-sm">Cookie Policy</h4>
+              <p className="text-xs text-blue-400 mb-4">This website uses cookies to store all my love for you.</p>
+              <button className="bg-blue-500 text-white text-xs px-6 py-2 rounded-full font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform">Accept All Love</button>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Static App Definitions ---
+
+const APP_DATA = [
+  { id: 'notes', title: 'Love Note', icon: FileText, color: 'text-yellow-500', bg: 'bg-yellow-100', component: NotesApp, initialPos: { x: 50, y: 50 } },
+  { id: 'gallery', title: 'Us Gallery', icon: ImageIcon, color: 'text-blue-500', bg: 'bg-blue-100', component: GalleryApp, initialPos: { x: 100, y: 80 } },
+  { id: 'music', title: 'Music', icon: Music, color: 'text-purple-500', bg: 'bg-purple-100', component: MusicApp, initialPos: { x: 400, y: 100 } },
+  { id: 'coupons', title: 'Coupons', icon: Gift, color: 'text-red-500', bg: 'bg-red-100', component: CouponApp, initialPos: { x: 150, y: 150 } },
+  { id: 'chat', title: 'Our Chat', icon: MessageCircle, color: 'text-green-500', bg: 'bg-green-100', component: ChatApp, initialPos: { x: 500, y: 50 } },
+  { id: 'snake', title: 'Snake Game', icon: Cpu, color: 'text-orange-500', bg: 'bg-orange-100', component: SnakeGameApp, initialPos: { x: 200, y: 120 } },
+  { id: 'browser', title: 'Why I Love U', icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-100', component: BrowserApp, initialPos: { x: 60, y: 60 } },
+  { id: 'recycle', title: 'Recycle Bin', icon: Trash2, color: 'text-gray-500', bg: 'bg-gray-200', component: RecycleBinApp, initialPos: { x: 300, y: 200 } },
+  { id: 'crash', title: "Don't Click", icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-100', component: null, initialPos: { x: 600, y: 400 }, isAction: true }, // Special case for BSOD
+];
+
+// --- Main Desktop ---
+
+const App = () => {
+  const [wallpaper, setWallpaper] = useState(0); 
+  const [locked, setLocked] = useState(true);
+  const [password, setPassword] = useState("");
+  const [bsod, setBsod] = useState(false);
+  
+  const wallpapers = [
+    "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-200 via-purple-200 to-indigo-100",
+    "bg-[radial-gradient(at_top_left,_var(--tw-gradient-stops))] from-rose-100 via-teal-50 to-emerald-100",
+    "bg-gradient-to-t from-orange-100 to-sky-100"
+  ];
+
+  const [windows, setWindows] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+
+  // Desktop Icons State (Draggable)
+  const [desktopIcons, setDesktopIcons] = useState([]);
+  const [draggingIcon, setDraggingIcon] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Initialize icons in a grid
+  useEffect(() => {
+    const initialIcons = APP_DATA.map((app, index) => ({
+      id: app.id,
+      x: 30 + (index % 4) * 110, 
+      y: 40 + Math.floor(index / 4) * 130, 
+    }));
+    setDesktopIcons(initialIcons);
+  }, []);
+
+  const openApp = (appId) => {
+    const app = APP_DATA.find(a => a.id === appId);
+    if (!app) return;
+
+    if (app.isAction) {
+      if (app.id === 'crash') setBsod(true);
+      return;
+    }
+
+    if (windows.find(w => w.id === app.id)) {
+      setActiveId(app.id);
+    } else {
+      setWindows([...windows, { ...app, zIndex: windows.length + 1, pos: app.initialPos }]);
+      setActiveId(app.id);
+    }
+  };
+
+  const closeWindow = (id) => setWindows(windows.filter(w => w.id !== id));
+
+  const updateWindowPos = (id, pos) => {
+    setWindows(windows.map(w => w.id === id ? { ...w, pos } : w));
+  };
+
+  // Icon Drag Handlers
+  const handleIconMouseDown = (e, id) => {
+    e.stopPropagation(); // Prevent clicking through to wallpaper
+    const icon = desktopIcons.find(i => i.id === id);
+    setDraggingIcon(id);
+    setDragOffset({
+      x: e.clientX - icon.x,
+      y: e.clientY - icon.y
+    });
+  };
+
+  useEffect(() => {
+    const handleIconMouseMove = (e) => {
+      if (draggingIcon) {
+        setDesktopIcons(prev => prev.map(icon => {
+          if (icon.id === draggingIcon) {
+            return {
+              ...icon,
+              x: e.clientX - dragOffset.x,
+              y: e.clientY - dragOffset.y
+            };
+          }
+          return icon;
+        }));
+      }
+    };
+
+    const handleIconMouseUp = () => {
+      setDraggingIcon(null);
+    };
+
+    if (draggingIcon) {
+      window.addEventListener('mousemove', handleIconMouseMove);
+      window.addEventListener('mouseup', handleIconMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleIconMouseMove);
+      window.removeEventListener('mouseup', handleIconMouseUp);
+    };
+  }, [draggingIcon, dragOffset]);
+
+
+  // --- Screens ---
+
+  if (bsod) {
+    return (
+      <div 
+        className="fixed inset-0 bg-rose-400 text-white font-mono p-8 flex flex-col items-center justify-center cursor-none z-[9999]"
+        onClick={() => setBsod(false)}
+      >
+        <div className="text-8xl mb-8 animate-bounce">🥺</div>
+        <h1 className="text-3xl font-bold mb-4 bg-white text-rose-500 px-4 py-1 rounded">SYSTEM OVERLOAD</h1>
+        <p className="text-center max-w-lg mb-8 opacity-90 text-lg leading-relaxed">
+          Your computer ran into a problem because it couldn't handle how much I love you. 
+          <br/>We're just collecting some error info (100% complete) and then we'll restart for a hug.
+        </p>
+        <div className="bg-rose-500/50 p-6 rounded-xl text-sm border border-white/20 shadow-xl backdrop-blur-sm">
+          <p>Stop Code: TOO_MUCH_AFFECTION</p>
+          <p>Status: MY_HEART_IS_YOURS</p>
+          <div className="w-full bg-white/20 h-1 mt-4 rounded-full overflow-hidden">
+             <div className="w-full h-full bg-white animate-pulse"></div>
+          </div>
+        </div>
+        <p className="mt-10 text-sm animate-pulse">(Click anywhere to restart)</p>
+      </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-2xl flex flex-col items-center justify-center text-white z-50">
+        <FloatingHearts />
+        
+        <div className="mb-10 flex flex-col items-center z-10 relative">
+           <div className="w-28 h-28 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,255,255,0.4)] ring-4 ring-white/30 animate-pulse">
+             <Unlock size={48} className="text-white drop-shadow-md" />
+           </div>
+           <h1 className="text-5xl font-bold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-pink-100 drop-shadow-sm">Love OS</h1>
+           <p className="text-pink-100 text-lg font-medium tracking-wide">Enter the password to my heart</p>
+        </div>
+
+        <form 
+          onSubmit={(e) => { e.preventDefault(); if(password.toLowerCase() === "love") setLocked(false); else alert("Hint: It's 'love'"); }}
+          className="flex flex-col gap-4 w-72 z-10 relative"
+        >
+          <input 
+            type="password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter 'love'..."
+            className="w-full px-8 py-4 rounded-full bg-white/20 backdrop-blur-xl border border-white/40 text-center text-white placeholder-pink-100/70 outline-none focus:bg-white/30 transition-all shadow-xl text-lg tracking-widest"
+          />
+          <button className="w-full py-4 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-bold shadow-lg shadow-pink-500/30 transition-all transform active:scale-95 text-lg uppercase tracking-wider flex items-center justify-center gap-2">
+            <span>Log In</span> <Heart size={18} fill="currentColor" />
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`fixed inset-0 overflow-hidden transition-all duration-1000 ${wallpapers[wallpaper]}`}>
+      <FloatingHearts />
+      
+      {/* Top Bar */}
+      <div className="absolute top-0 w-full h-10 flex justify-between items-center px-6 text-gray-600 bg-white/20 backdrop-blur-md z-40 border-b border-white/20 shadow-sm">
+        <div className="flex items-center gap-4 text-sm font-medium">
+          <span className="font-black flex items-center gap-2 text-pink-600"><Heart fill="currentColor" size={16}/> LoveOS 3.0</span>
+        </div>
+        <div className="flex items-center gap-6 text-xs font-bold tracking-wide text-gray-500">
+          <button onClick={() => setWallpaper((wallpaper + 1) % wallpapers.length)} className="hover:text-pink-600 transition-colors flex items-center gap-1 bg-white/30 px-3 py-1 rounded-full">
+             <Sparkles size={12}/> Theme
+          </button>
+          <span>100% ❤️</span>
+          <span>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+      </div>
+
+      {/* Desktop Area - Icons are now Absolute */}
+      <div className="absolute inset-0 pt-10 pb-24 px-6 z-0">
+        {desktopIcons.map(iconState => {
+          const app = APP_DATA.find(a => a.id === iconState.id);
+          if (!app) return null;
+          
+          return (
+            <div 
+              key={app.id}
+              onDoubleClick={() => openApp(app.id)}
+              onMouseDown={(e) => handleIconMouseDown(e, app.id)}
+              style={{ left: iconState.x, top: iconState.y }}
+              className="absolute flex flex-col items-center gap-3 group cursor-grab active:cursor-grabbing w-24 transition-transform hover:scale-105"
+            >
+              <div className={`w-16 h-16 rounded-[20px] ${app.bg} flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.05)] border-2 border-white/50 group-hover:shadow-[0_10px_25px_rgba(255,182,193,0.4)] transition-all pointer-events-none relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <app.icon size={30} className={`${app.color} drop-shadow-sm transform group-hover:-rotate-6 transition-transform duration-300`} />
+              </div>
+              <span className="text-gray-600 font-bold text-[11px] bg-white/50 px-3 py-1 rounded-full backdrop-blur-sm shadow-sm pointer-events-none whitespace-nowrap overflow-hidden max-w-[100px] text-ellipsis border border-white/40">
+                {app.title}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Windows */}
+      {windows.map(win => (
+        <WindowFrame
+          key={win.id}
+          id={win.id}
+          title={win.title}
+          position={win.pos}
+          isActive={activeId === win.id}
+          onFocus={() => setActiveId(win.id)}
+          onClose={() => closeWindow(win.id)}
+          onMinimize={() => closeWindow(win.id)} 
+          onMove={updateWindowPos}
+        >
+          {win.component ? <win.component /> : null}
+        </WindowFrame>
+      ))}
+
+      {/* Dock */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 h-24 px-6 rounded-[35px] bg-white/30 backdrop-blur-2xl border border-white/50 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex items-center gap-4 transition-all hover:scale-[1.02] z-50 overflow-x-auto max-w-[90vw] ring-1 ring-white/40">
+        {APP_DATA.filter(a => !a.isAction).map(app => (
+          <button 
+            key={app.id}
+            onClick={() => openApp(app.id)}
+            className="group relative flex flex-col items-center gap-1 transition-all duration-300 hover:-translate-y-4 shrink-0 p-2"
+          >
+            <div className={`w-14 h-14 rounded-2xl ${app.bg} flex items-center justify-center shadow-lg group-hover:shadow-xl border border-white/60 group-hover:scale-110 transition-all duration-300 ease-out`}>
+              <app.icon size={26} className={app.color} />
+            </div>
+            
+            {/* Tooltip */}
+            <span className="absolute -top-12 bg-gray-800 text-white text-[10px] font-bold py-1 px-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-50 pointer-events-none translate-y-2 group-hover:translate-y-0 shadow-xl">
+              {app.title}
+            </span>
+            
+            {/* Active Indicator */}
+            {windows.find(w => w.id === app.id) && (
+              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full mt-1 shadow-[0_0_5px_rgba(236,72,153,0.5)]"></div>
+            )}
+          </button>
+        ))}
+        <div className="w-px h-10 bg-gray-400/20 mx-2"></div>
+        <button 
+           onClick={() => setLocked(true)}
+           className="w-14 h-14 rounded-2xl bg-gray-100/80 flex items-center justify-center hover:bg-white transition-all shadow-inner shrink-0 group hover:shadow-lg border border-transparent hover:border-white"
+        >
+          <Unlock size={24} className="text-gray-400 group-hover:text-pink-500 transition-colors" />
+        </button>
+      </div>
+      
+    </div>
+  );
+};
+
+export default App;
