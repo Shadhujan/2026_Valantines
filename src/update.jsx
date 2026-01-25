@@ -108,7 +108,7 @@ const CuteButton = ({ children, onClick, className = "", variant = "primary" }) 
     );
 };
 
-const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id }) => {
+const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, width = "w-80 md:w-96" }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
@@ -146,7 +146,7 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
         <div
             onMouseDown={onFocus}
             style={{ left: position.x, top: position.y, zIndex: isActive ? 50 : 10 }}
-            className={`absolute w-80 md:w-96 flex flex-col overflow-hidden transition-all duration-300 ${GLASS_STYLE} ${isActive ? 'scale-100 shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'scale-[0.98] opacity-90'}`}
+            className={`absolute ${width} flex flex-col overflow-hidden transition-all duration-300 ${GLASS_STYLE} ${isActive ? 'scale-100 shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'scale-[0.98] opacity-90'}`}
         >
             {/* Title Bar */}
             <div
@@ -524,164 +524,203 @@ const BrowserApp = () => (
 );
 
 const LoveQuestApp = () => {
-    const [started, setStarted] = useState(false);
-    const [currentLevel, setCurrentLevel] = useState(0);
-    const [showReward, setShowReward] = useState(false);
-    const [completed, setCompleted] = useState(false);
-    const [inputValue, setInputValue] = useState("");
+    const [gameState, setGameState] = useState('welcome'); // welcome, playing, reward, final
+    const [level, setLevel] = useState(0);
+    const [input, setInput] = useState("");
     const [error, setError] = useState("");
 
-    const LEVELS = [
+    // --- MERGED GAME CONTENT ---
+    const levels = [
         {
             id: 1,
+            type: 'quiz',
             title: "Level 1: The Beginning",
-            type: "question",
-            clue: "Where did we first meet? (Hint: It starts with 'C')",
-            answer: ["cafe", "coffee", "college", "canteen"],
-            rewardMessage: "That day changed my life forever. I knew you were special the moment I saw you.",
-            rewardImage: "https://images.unsplash.com/photo-1504194569255-d8641bc3864a?w=400"
+            question: "Where did we go for our first proper date?",
+            hint: "(Type 'cafe' for demo)",
+            answer: ["cafe", "coffee", "starbucks"],
+            memory: "I was so nervous, but your smile made everything perfect.",
+            rewardImage: "https://images.unsplash.com/photo-1504194569255-d8641bc3864a?w=400",
+            bg: "bg-orange-100"
         },
         {
             id: 2,
-            title: "Level 2: The Song",
-            type: "question",
-            clue: "Which artist do we always sing along to in the car?",
-            answer: ["ed sheeran", "taylor swift", "adele", "weeknd"],
-            rewardMessage: "Every love song makes sense now that I have you.",
-            rewardImage: "https://images.unsplash.com/photo-1514525253440-b393452e8d03?w=400"
+            type: 'find',
+            title: "Level 2: Hidden Love",
+            question: "Find the unique heart hidden among the broken ones!",
+            gridSize: 25,
+            targetIndex: 12,
+            memory: "You healed my heart just like you found this one.",
+            rewardImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b9?w=400",
+            bg: "bg-pink-100"
         },
         {
             id: 3,
+            type: 'quiz',
             title: "Level 3: The Favorite",
-            type: "question",
-            clue: "What is my absolute favorite food that you buy me?",
-            answer: ["pizza", "sushi", "chocolate", "burger"],
-            rewardMessage: "You know the way to my heart is through my stomach (and your smile).",
-            rewardImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400"
+            question: "What is my absolute favorite food? 🍕🍔",
+            hint: "(Type 'pizza' for demo)",
+            answer: ["pizza", "burger", "sushi"],
+            memory: "I love sharing meals (and slices) with you.",
+            rewardImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400",
+            bg: "bg-yellow-100"
         },
         {
             id: 4,
-            title: "Level 4: The Trip",
-            type: "question",
-            clue: "Where do we dream of going together one day?",
-            answer: ["paris", "japan", "italy", "beach"],
-            rewardMessage: "I can't wait to explore the world with my favorite person.",
-            rewardImage: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=400"
+            type: 'quiz',
+            title: "Level 4: The Song",
+            question: "Which artist do we always sing along to?",
+            hint: "(Rhymes with Bed Sheeran)",
+            answer: ["ed sheeran", "taylor swift", "adele", "weeknd"],
+            memory: "Every love song makes sense now that I have you.",
+            rewardImage: "https://images.unsplash.com/photo-1514525253440-b393452e8d03?w=400",
+            bg: "bg-purple-100"
         }
     ];
 
-    const handleStart = () => setStarted(true);
-
-    const checkAnswer = () => {
-        const currentQ = LEVELS[currentLevel];
-        const isCorrect = currentQ.answer.some(a => inputValue.toLowerCase().includes(a));
-
-        if (isCorrect) {
-            setShowReward(true);
+    const handleQuizSubmit = (e) => {
+        e.preventDefault();
+        const currentQ = levels[level];
+        if (currentQ.answer.some(a => input.toLowerCase().includes(a))) {
+            setGameState('reward');
             setError("");
         } else {
-            setError("Not quite! Try again, babe ❤️");
-            setTimeout(() => setError(""), 2000);
+            setError("Not quite! Try again ❤️");
         }
     };
 
     const nextLevel = () => {
-        setShowReward(false);
-        setInputValue("");
-        if (currentLevel + 1 < LEVELS.length) {
-            setCurrentLevel(l => l + 1);
+        setInput("");
+        if (level + 1 < levels.length) {
+            setLevel(level + 1);
+            setGameState('playing');
         } else {
-            setCompleted(true);
+            setGameState('final');
         }
     };
 
-    if (!started) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-pink-50 to-white">
-                <div className="w-24 h-24 bg-pink-100 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-md">
-                    <Map size={48} className="text-pink-500" />
-                </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">The Love Quest</h2>
-                <p className="text-gray-500 mb-8 max-w-xs">Ready for a scavenger hunt down memory lane? Solve the puzzles to unlock my heart.</p>
-                <CuteButton onClick={handleStart} className="text-lg px-8 py-3">Start Adventure</CuteButton>
+    // --- RENDERING SCREENS ---
+
+    // 1. Welcome Screen
+    if (gameState === 'welcome') return (
+        <div className="p-8 h-full flex flex-col items-center justify-center text-center bg-gradient-to-b from-blue-50 to-pink-50">
+            <div className="w-24 h-24 bg-pink-100 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-md">
+                <Map size={48} className="text-pink-500" />
             </div>
-        );
-    }
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">The Love Quest</h2>
+            <p className="text-gray-500 mb-8 max-w-xs">A mini adventure through our memories. Solve clues to unlock my heart!</p>
+            <CuteButton onClick={() => setGameState('playing')} className="text-lg px-8 py-3">Start Adventure</CuteButton>
+        </div>
+    );
 
-    if (completed) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-rose-100 to-pink-50 overflow-hidden relative">
-                <div className="absolute inset-0 pointer-events-none">
-                    {[...Array(20)].map((_, i) => (
-                        <div key={i} className="absolute animate-pulse text-2xl" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random()}s` }}>❤️</div>
-                    ))}
+    // 2. Final Reward Screen (Merged: Voucher + Valentine Proposal)
+    if (gameState === 'final') return (
+        <div className="p-8 h-full flex flex-col items-center justify-center text-center bg-gradient-to-br from-rose-100 to-pink-50 overflow-hidden relative">
+            <div className="absolute inset-0 pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                    <div key={i} className="absolute animate-pulse text-2xl" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random()}s` }}>❤️</div>
+                ))}
+            </div>
+            <Sparkles size={48} className="text-yellow-400 mb-4 animate-spin-slow" />
+            <h2 className="text-3xl font-extrabold text-pink-600 mb-4">Quest Complete! 🎉</h2>
+
+            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-xl transform rotate-1 border-4 border-pink-200 mb-6 max-w-sm">
+                <p className="font-handwriting text-xl text-gray-700 mb-4">
+                    "You know me better than anyone else. Thank you for being my player 2."
+                </p>
+                <div className="border-t border-dashed border-gray-300 pt-4 mt-4">
+                    <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Reward Unlocked</p>
+                    <div className="font-bold text-xl text-pink-500 bg-pink-50 py-2 rounded-lg border border-pink-100">Dinner Date Voucher 🎟️</div>
+                    <p className="text-[10px] text-gray-500 mt-1">Valid: Forever</p>
                 </div>
-                <h1 className="text-4xl font-extrabold text-pink-600 mb-6 drop-shadow-sm">You Did It! 🎉</h1>
-
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-xl max-w-sm border border-pink-200 transform rotate-1">
-                    <p className="text-lg text-gray-700 italic mb-4">"You are the solution to every puzzle in my life. Thank you for being my player 2."</p>
-                    <div className="w-full h-1 bg-pink-100 rounded-full mb-4"></div>
-                    <p className="font-bold text-gray-800 text-xl mb-6">Will you be my Valentine?</p>
-
-                    <div className="flex gap-4 justify-center">
-                        <CuteButton onClick={() => alert("Yay! I love you! ❤️")} className="w-full">YES! 💘</CuteButton>
-                    </div>
+                <div className="mt-6">
+                    <p className="font-bold text-gray-800 text-xl mb-4">Will you be my Valentine?</p>
+                    <CuteButton onClick={() => alert("Yay! I love you! ❤️")} className="w-full shadow-pink-300">YES! 💘</CuteButton>
                 </div>
             </div>
-        );
-    }
+            <CuteButton onClick={() => { setLevel(0); setGameState('welcome'); }} variant="ghost" className="text-xs">Play Again</CuteButton>
+        </div>
+    );
 
-    if (showReward) {
-        const level = LEVELS[currentLevel];
+    // 3. Reward/Memory Screen (Merged: Polaroid Image + Memory Text)
+    if (gameState === 'reward') {
+        const current = levels[level];
         return (
-            <div className="h-full flex flex-col items-center p-6 bg-pink-50 overflow-y-auto">
-                <div className="w-full bg-white p-3 pb-8 shadow-xl rotate-2 max-w-xs mt-4 mb-8">
+            <div className={`p-6 h-full flex flex-col items-center overflow-y-auto ${current.bg}`}>
+                <div className="w-full bg-white p-3 pb-8 shadow-xl rotate-2 max-w-xs mt-4 mb-8 transform hover:scale-105 transition-transform duration-500">
                     <div className="w-full aspect-square bg-gray-200 overflow-hidden mb-4">
-                        <img src={level.rewardImage} alt="Reward" className="w-full h-full object-cover" />
+                        <img src={current.rewardImage} alt="Memory" className="w-full h-full object-cover" />
                     </div>
-                    <p className="font-handwriting text-2xl text-center text-gray-700">{level.rewardMessage}</p>
+                    <p className="font-handwriting text-2xl text-center text-gray-700">Memory Unlocked!</p>
                 </div>
+
+                <div className="bg-white/60 p-4 rounded-xl backdrop-blur-sm mb-6 shadow-sm border border-white/50 max-w-xs text-center">
+                    <p className="text-gray-700 italic">"{current.memory}"</p>
+                </div>
+
                 <CuteButton onClick={nextLevel} className="animate-bounce">
-                    {currentLevel === LEVELS.length - 1 ? "Finish Quest" : "Next Level"} <ArrowRight size={16} />
+                    {level === levels.length - 1 ? "Finish Quest" : "Next Level"} <ArrowRight size={16} />
                 </CuteButton>
             </div>
         );
     }
 
-    const level = LEVELS[currentLevel];
-
+    // 4. Main Game Loop (Quiz or Find)
+    const current = levels[level];
     return (
-        <div className="h-full flex flex-col p-6 bg-white/50">
-            <div className="flex justify-between items-center mb-6">
-                <span className="text-xs font-bold text-pink-400 uppercase tracking-widest">Level {currentLevel + 1}/{LEVELS.length}</span>
-                <div className="flex gap-1">
-                    {LEVELS.map((_, i) => (
-                        <div key={i} className={`w-2 h-2 rounded-full ${i <= currentLevel ? 'bg-pink-500' : 'bg-gray-200'}`}></div>
-                    ))}
-                </div>
+        <div className="h-full flex flex-col bg-white/50">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
+                <span className="text-xs font-bold text-pink-500 uppercase tracking-wider">{current.title}</span>
+                <span className="text-xs bg-pink-100 text-pink-600 px-2 py-1 rounded-full">{level + 1} / {levels.length}</span>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-pink-100 w-full max-w-xs">
-                    <span className="text-4xl mb-2 block">🧩</span>
-                    <h3 className="font-bold text-gray-800 text-lg mb-2">{level.title}</h3>
-                    <p className="text-gray-600 italic">"{level.clue}"</p>
-                </div>
+            <div className="flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
+                {current.type === 'find' ? (
+                    <div className="text-center mb-4">
+                        <span className="text-4xl mb-2 block">🔍</span>
+                        <h3 className="text-lg font-bold text-gray-700">{current.question}</h3>
+                    </div>
+                ) : (
+                    <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-pink-100 w-full max-w-xs text-center">
+                        <span className="text-4xl mb-2 block">🧩</span>
+                        <h3 className="font-bold text-gray-700 text-lg mb-2">{current.question}</h3>
+                    </div>
+                )}
 
-                <div className="w-full max-w-xs relative">
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => { setInputValue(e.target.value); setError(""); }}
-                        placeholder="Type your answer..."
-                        className="w-full px-4 py-3 rounded-xl border-2 border-pink-100 focus:border-pink-300 outline-none text-center bg-white/80 backdrop-blur-sm shadow-inner text-gray-700 font-bold"
-                    />
-                    {error && <div className="absolute -bottom-8 left-0 w-full text-center text-rose-500 text-xs font-bold animate-pulse">{error}</div>}
-                </div>
-            </div>
+                {/* Quiz Logic */}
+                {current.type === 'quiz' && (
+                    <form onSubmit={handleQuizSubmit} className="w-full max-w-[240px] flex flex-col gap-4">
+                        <p className="text-xs text-center text-gray-400 italic">{current.hint}</p>
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-pink-100 focus:border-pink-300 outline-none text-center bg-white/80 backdrop-blur-sm shadow-inner text-gray-700 font-bold"
+                            placeholder="Your answer..."
+                            autoFocus
+                        />
+                        {error && <p className="text-rose-500 text-xs text-center font-bold animate-pulse">{error}</p>}
+                        <CuteButton className="w-full shadow-lg">Submit Answer</CuteButton>
+                    </form>
+                )}
 
-            <div className="mt-auto">
-                <CuteButton onClick={checkAnswer} className="w-full py-3 shadow-lg">Submit Answer</CuteButton>
+                {/* Hidden Object Logic */}
+                {current.type === 'find' && (
+                    <div className="grid grid-cols-5 gap-3 p-4 bg-gray-100/50 rounded-2xl shadow-inner border border-white">
+                        {Array.from({ length: current.gridSize }).map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => {
+                                    if (i === current.targetIndex) { setGameState('reward'); }
+                                    else { setError("Not that one!"); setTimeout(() => setError(""), 1000); }
+                                }}
+                                className="w-10 h-10 flex items-center justify-center text-2xl hover:scale-125 transition-transform bg-white rounded-lg shadow-sm border border-gray-100 hover:border-pink-300"
+                            >
+                                {i === current.targetIndex ? '❤️' : '💔'}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                {current.type === 'find' && error && <p className="text-rose-500 text-xs text-center font-bold mt-4 animate-pulse">{error}</p>}
             </div>
         </div>
     );
@@ -696,8 +735,8 @@ const APP_DATA = [
     { id: 'coupons', title: 'Coupons', icon: Gift, color: 'text-red-500', bg: 'bg-red-100', component: CouponApp, initialPos: { x: 150, y: 150 } },
     { id: 'chat', title: 'Our Chat', icon: MessageCircle, color: 'text-green-500', bg: 'bg-green-100', component: ChatApp, initialPos: { x: 500, y: 50 } },
     { id: 'snake', title: 'Snake Game', icon: Cpu, color: 'text-orange-500', bg: 'bg-orange-100', component: SnakeGameApp, initialPos: { x: 200, y: 120 } },
-    { id: 'browser', title: 'Why I Love U', icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-100', component: BrowserApp, initialPos: { x: 60, y: 60 } },
-    { id: 'quest', title: 'Love Quest', icon: Map, color: 'text-rose-500', bg: 'bg-rose-100', component: LoveQuestApp, initialPos: { x: 350, y: 150 } },
+    { id: 'browser', title: 'Why I Love U', icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-100', component: BrowserApp, initialPos: { x: 60, y: 60 }, width: "w-[90vw] md:w-[600px]" },
+    { id: 'quest', title: 'Love Quest', icon: Map, color: 'text-rose-500', bg: 'bg-rose-100', component: LoveQuestApp, initialPos: { x: 250, y: 100 }, width: "w-[90vw] md:w-[550px]" },
     { id: 'recycle', title: 'Recycle Bin', icon: Trash2, color: 'text-gray-500', bg: 'bg-gray-200', component: RecycleBinApp, initialPos: { x: 300, y: 200 } },
     { id: 'crash', title: "Don't Click", icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-100', component: null, initialPos: { x: 600, y: 400 }, isAction: true }, // Special case for BSOD
 ];
@@ -914,6 +953,7 @@ const App = () => {
                     onClose={() => closeWindow(win.id)}
                     onMinimize={() => closeWindow(win.id)}
                     onMove={updateWindowPos}
+                    width={win.width}
                 >
                     {win.component ? <win.component /> : null}
                 </WindowFrame>
