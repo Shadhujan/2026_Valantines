@@ -358,7 +358,9 @@ const OldOS = ({ onUpdateStart }) => {
 
     // --- Update Tracking State ---
     const [featuresUsed, setFeaturesUsed] = useState(new Set());
-    const [updateAvailable, setUpdateAvailable] = useState(false);
+    const [updateReady, setUpdateReady] = useState(false); // True when all tasks are done
+    const [showUpdateModal, setShowUpdateModal] = useState(false); // Modal visibility
+    const [showNotification, setShowNotification] = useState(false); // Bubble visibility
     const [installingUpdate, setInstallingUpdate] = useState(false);
     const [updateProgress, setUpdateProgress] = useState(0);
 
@@ -380,11 +382,24 @@ const OldOS = ({ onUpdateStart }) => {
     // Check for update trigger
     useEffect(() => {
         // If all apps + trash have been opened/clicked
-        if (featuresUsed.size >= Object.keys(apps).length && !updateAvailable && !installingUpdate) {
-            // Add a small delay for dramatic effect
-            setTimeout(() => setUpdateAvailable(true), 1500);
+        if (featuresUsed.size >= Object.keys(apps).length && !updateReady && !installingUpdate) {
+            // Delay slightly for effect
+            setTimeout(() => {
+                setUpdateReady(true);
+                setShowNotification(true);
+            }, 1000);
         }
-    }, [featuresUsed, updateAvailable]);
+    }, [featuresUsed, updateReady, installingUpdate]);
+
+    const handleNotificationClick = () => {
+        setShowNotification(false);
+        setShowUpdateModal(true);
+    };
+
+    const handleTrayIconClick = () => {
+        setShowUpdateModal(true);
+        setShowNotification(false); // Ensure bubble is gone if clicking icon
+    };
 
     const openApp = (appId) => {
         // Track usage
@@ -421,7 +436,7 @@ const OldOS = ({ onUpdateStart }) => {
     };
 
     const initiateUpdate = () => {
-        setUpdateAvailable(false);
+        setShowUpdateModal(false);
         setInstallingUpdate(true);
 
         let progress = 0;
@@ -540,25 +555,25 @@ const OldOS = ({ onUpdateStart }) => {
 
     return (
         <div className="fixed inset-0 bg-[#008080] overflow-hidden select-none font-sans cursor-default">
-            {/* UPDATE NOTIFICATION POPUP */}
-            {updateAvailable && (
+            {/* UPDATE CONFIRMATION MODAL */}
+            {showUpdateModal && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
                     <div className="bg-gray-300 border-2 border-t-white border-l-white border-b-black border-r-black p-1 shadow-2xl w-96 animate-pulse-once">
                         <div className="bg-[#000080] text-white px-2 py-1 font-bold mb-4 flex justify-between items-center">
                             <span>System Update</span>
-                            <X size={16} className="cursor-pointer" onClick={() => setUpdateAvailable(false)} />
+                            <X size={16} className="cursor-pointer" onClick={() => setShowUpdateModal(false)} />
                         </div>
                         <div className="flex gap-4 p-4">
                             <AlertTriangle size={36} className="text-yellow-600 mb-auto shrink-0" />
                             <div className="text-sm">
                                 <p className="font-bold mb-2">New Update Available!</p>
-                                <p className="mb-4">LoveOS 95 has a major update waiting (Cute Edition v3.0). It is recommended to update for maximum happiness.</p>
+                                <p className="mb-4">LoveOS 95 has a major update waiting (Love OS v3.0). It is recommended to update for maximum happiness.</p>
                                 <p className="mb-4">Do you want to update now?</p>
                             </div>
                         </div>
                         <div className="flex justify-center gap-4 p-2">
                             <Button95 onClick={initiateUpdate} className="w-24 font-bold">Yes</Button95>
-                            <Button95 onClick={() => setUpdateAvailable(false)} className="w-24">Not Now</Button95>
+                            <Button95 onClick={() => setShowUpdateModal(false)} className="w-24">Not Now</Button95>
                         </div>
                     </div>
                 </div>
@@ -627,7 +642,7 @@ const OldOS = ({ onUpdateStart }) => {
             ))}
 
             {/* Taskbar */}
-            <div className="absolute bottom-0 w-full h-10 bg-gray-300 border-t-2 border-white flex items-center p-1 gap-1 z-[100]">
+            <div className="absolute bottom-0 w-full h-10 bg-gray-300 border-t-2 border-white flex items-center p-1 gap-1 z-[100] overflow-visible">
                 <Button95
                     onClick={() => setStartMenuOpen(!startMenuOpen)}
                     active={startMenuOpen}
@@ -660,7 +675,27 @@ const OldOS = ({ onUpdateStart }) => {
                 </div>
 
                 {/* System Tray */}
-                <div className="border-2 border-t-gray-500 border-l-gray-500 border-b-white border-r-white px-2 py-1 flex gap-2 items-center bg-gray-300">
+                <div className="border-2 border-t-gray-500 border-l-gray-500 border-b-white border-r-white px-2 py-1 flex gap-2 items-center bg-gray-300 relative">
+                    {/* Update Notification Bubble */}
+                    {showNotification && (
+                        <div
+                            onClick={handleNotificationClick}
+                            className="absolute bottom-full right-0 mb-2 w-48 bg-[#ffffe1] border border-black p-2 text-xs text-black shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer flex flex-col gap-1 z-[200]"
+                        >
+                            <div className="flex items-center gap-1 font-bold">
+                                <AlertTriangle size={12} className="text-yellow-600" /> Update Available
+                            </div>
+                            <p>New updates are available for your heart. Click here to install.</p>
+                        </div>
+                    )}
+
+                    {/* Update Icon (Only visible when update is ready) */}
+                    {updateReady && (
+                        <div onClick={handleTrayIconClick} className="cursor-pointer hover:bg-gray-400 p-0.5 rounded-sm">
+                            <Download size={14} className="text-blue-600 animate-bounce" />
+                        </div>
+                    )}
+
                     <Heart size={14} className="text-red-500 animate-pulse" fill="red" />
                     <span className="text-xs font-sans">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
