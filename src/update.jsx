@@ -108,16 +108,31 @@ const CuteButton = ({ children, onClick, className = "", variant = "primary" }) 
     );
 };
 
-const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, width = "w-80 md:w-96" }) => {
+const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, size, onResize }) => {
     const [isDragging, setIsDragging] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, w: 0, h: 0 });
 
     const handleMouseDown = (e) => {
         onFocus();
+        if (e.target.closest('.window-content') || e.target.closest('.window-control')) return;
         setIsDragging(true);
         setDragOffset({
             x: e.clientX - position.x,
             y: e.clientY - position.y
+        });
+    };
+
+    const handleResizeStart = (e) => {
+        e.stopPropagation();
+        onFocus();
+        setIsResizing(true);
+        setResizeStart({
+            x: e.clientX,
+            y: e.clientY,
+            w: size.width,
+            h: size.height
         });
     };
 
@@ -129,10 +144,19 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
                     y: e.clientY - dragOffset.y
                 });
             }
+            if (isResizing) {
+                onResize(id, {
+                    width: Math.max(300, resizeStart.w + (e.clientX - resizeStart.x)),
+                    height: Math.max(200, resizeStart.h + (e.clientY - resizeStart.y))
+                });
+            }
         };
-        const handleMouseUp = () => setIsDragging(false);
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            setIsResizing(false);
+        };
 
-        if (isDragging) {
+        if (isDragging || isResizing) {
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
         }
@@ -140,31 +164,42 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, dragOffset, id, onMove]);
+    }, [isDragging, isResizing, dragOffset, resizeStart, id, onMove, onResize]);
 
     return (
         <div
-            onMouseDown={onFocus}
-            style={{ left: position.x, top: position.y, zIndex: isActive ? 50 : 10 }}
-            className={`absolute ${width} flex flex-col overflow-hidden transition-all duration-300 ${GLASS_STYLE} ${isActive ? 'scale-100 shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'scale-[0.98] opacity-90'}`}
+            onMouseDown={handleMouseDown}
+            style={{
+                left: position.x,
+                top: position.y,
+                width: size ? size.width : (width || "20rem"), // Fallback for transition
+                height: size ? size.height : "auto",
+                zIndex: isActive ? 50 : 10
+            }}
+            className={`absolute flex flex-col overflow-hidden transition-shadow duration-300 ${GLASS_STYLE} ${isActive ? 'shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'opacity-90'}`}
         >
             {/* Title Bar */}
-            <div
-                onMouseDown={handleMouseDown}
-                className="h-12 flex justify-between items-center px-4 cursor-move bg-pink-50/50 border-b border-pink-100/50 select-none"
-            >
+            <div className="h-12 flex justify-between items-center px-4 cursor-move bg-pink-50/50 border-b border-pink-100/50 select-none shrink-0 window-handle">
                 <span className="font-bold text-gray-600 text-sm flex items-center gap-2">
                     <Heart size={14} className="text-pink-400 fill-pink-400" /> {title}
                 </span>
-                <div className="flex gap-2 group">
+                <div className="flex gap-2 group window-control">
                     <button onClick={(e) => { e.stopPropagation(); onMinimize(); }} className="w-3 h-3 rounded-full bg-yellow-300 hover:scale-125 transition-transform shadow-sm" />
                     <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="w-3 h-3 rounded-full bg-red-300 hover:scale-125 transition-transform shadow-sm" />
                 </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto max-h-[60vh] text-gray-600 relative bg-white/40">
+            <div className="flex-1 overflow-auto text-gray-600 relative bg-white/40 window-content">
                 {children}
+            </div>
+
+            {/* Resize Handle */}
+            <div
+                onMouseDown={handleResizeStart}
+                className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center text-pink-300 hover:text-pink-500 z-50"
+            >
+                <Maximize2 size={12} className="transform rotate-90" />
             </div>
         </div>
     );
@@ -785,7 +820,30 @@ const App = () => {
         if (windows.find(w => w.id === app.id)) {
             setActiveId(app.id);
         } else {
-            setWindows([...windows, { ...app, zIndex: windows.length + 1, pos: app.initialPos }]);
+            // Default sizes based on app type or generic default
+            let defaultWidth;
+            let defaultHeight;
+
+            // Handle legacy width overrides from APP_DATA
+            if (app.width) {
+                // Try to parse parsing "w-[...] md:w-[...]" strings roughly or just set defaults
+                // Since we are moving to state-based size, let's just set good defaults
+            }
+
+            defaultWidth = 400;
+            defaultHeight = 500;
+
+            if (app.id === 'quest') { defaultWidth = 550; defaultHeight = 600; }
+            if (app.id === 'browser') { defaultWidth = 600; defaultHeight = 500; }
+            if (app.id === 'snake') { defaultWidth = 350; defaultHeight = 400; }
+            if (app.id === 'notes') { defaultWidth = 320; defaultHeight = 450; }
+
+            setWindows([...windows, {
+                ...app,
+                zIndex: windows.length + 1,
+                pos: app.initialPos,
+                size: { width: defaultWidth, height: defaultHeight }
+            }]);
             setActiveId(app.id);
         }
     };
@@ -794,6 +852,10 @@ const App = () => {
 
     const updateWindowPos = (id, pos) => {
         setWindows(windows.map(w => w.id === id ? { ...w, pos } : w));
+    };
+
+    const updateWindowSize = (id, size) => {
+        setWindows(windows.map(w => w.id === id ? { ...w, size } : w));
     };
 
     // Icon Drag Handlers
@@ -948,12 +1010,13 @@ const App = () => {
                     id={win.id}
                     title={win.title}
                     position={win.pos}
+                    size={win.size}
                     isActive={activeId === win.id}
                     onFocus={() => setActiveId(win.id)}
                     onClose={() => closeWindow(win.id)}
                     onMinimize={() => closeWindow(win.id)}
                     onMove={updateWindowPos}
-                    width={win.width}
+                    onResize={updateWindowSize}
                 >
                     {win.component ? <win.component /> : null}
                 </WindowFrame>
