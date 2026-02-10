@@ -1020,17 +1020,31 @@ const LoveOS = () => {
     const [draggingIcon, setDraggingIcon] = useState(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-    // Initialize icons in a grid
+    // Taskbar Visibility State
+    const [taskbarVisible, setTaskbarVisible] = useState(false);
+
+    // Initialize icons in a grid (Centered)
     useEffect(() => {
+        const cols = 4;
+        const iconSpacingX = 110;
+        const gridWidth = cols * iconSpacingX;
+        // Simple centering logic based on window width
+        const startX = Math.max(20, (window.innerWidth - gridWidth) / 2);
+        const startY = 100;
+
         const initialIcons = APP_DATA.map((app, index) => ({
             id: app.id,
-            x: 30 + (index % 4) * 110,
-            y: 40 + Math.floor(index / 4) * 130,
+            x: startX + (index % cols) * iconSpacingX,
+            y: startY + Math.floor(index / cols) * 130,
         }));
         setDesktopIcons(initialIcons);
     }, []);
 
     const openApp = (appId) => {
+        // Show taskbar temporarily
+        setTaskbarVisible(true);
+        setTimeout(() => setTaskbarVisible(false), 5000);
+
         const app = APP_DATA.find(a => a.id === appId);
         if (!app) return;
 
@@ -1253,36 +1267,47 @@ const LoveOS = () => {
                 </WindowFrame>
             ))}
 
-            {/* Dock */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 h-24 px-6 rounded-[35px] bg-white/30 backdrop-blur-2xl border border-white/50 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex items-center gap-4 transition-all hover:scale-[1.02] z-50 overflow-x-auto max-w-[90vw] ring-1 ring-white/40">
-                {APP_DATA.filter(a => !a.isAction).map(app => (
+            {/* Dock - Auto Hide */}
+            <div className={`absolute bottom-0 left-0 w-full transition-all duration-300 z-50 flex justify-center items-end group ${taskbarVisible ? 'h-28' : 'h-6 hover:h-28'}`}>
+
+                {/* Visual Indicator for Hidden Dock */}
+                <div className={`absolute bottom-1 w-48 h-1.5 bg-emerald-900/80 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(6,78,59,0.6)] transition-all duration-300 animate-pulse ${taskbarVisible ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'}`}></div>
+
+                <div className={`mb-4 h-20 px-6 rounded-[35px] bg-white/30 backdrop-blur-2xl border border-white/50 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex items-center gap-4 transition-all duration-500 ease-out transform overflow-x-auto max-w-[90vw] ring-1 ring-white/40 ${taskbarVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-[150%] opacity-0 scale-90 group-hover:translate-y-0 group-hover:opacity-100 group-hover:scale-100'}`}>
+                    {/* Show ONLY Open Apps */}
+                    {APP_DATA.filter(app => windows.find(w => w.id === app.id)).map(app => (
+                        <button
+                            key={app.id}
+                            onClick={() => openApp(app.id)}
+                            className="group/icon relative flex flex-col items-center gap-1 transition-all duration-300 hover:-translate-y-4 shrink-0 p-2"
+                        >
+                            <div className={`w-12 h-12 rounded-2xl ${app.bg} flex items-center justify-center shadow-lg group-hover/icon:shadow-xl border border-white/60 group-hover/icon:scale-110 transition-all duration-300 ease-out`}>
+                                <app.icon size={22} className={app.color} />
+                            </div>
+
+                            {/* Tooltip */}
+                            <span className="absolute -top-10 bg-gray-800 text-white text-[10px] font-bold py-1 px-3 rounded-full opacity-0 group-hover/icon:opacity-100 transition-all duration-300 whitespace-nowrap z-50 pointer-events-none translate-y-2 group-hover/icon:translate-y-0 shadow-xl">
+                                {app.title}
+                            </span>
+
+                            {/* Active Indicator (Always visible since these are open apps) */}
+                            <div className={`w-1 h-1 ${theme.id === 'plant' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.5)]'} rounded-full mt-1`}></div>
+                        </button>
+                    ))}
+
+                    {/* If no apps are open, show a placeholder or keep it empty/small? Let's just keep the lock button always or maybe separated? */}
+                    {/* User asked for "only that open apps", implies lock button might move or stay. Let's keep lock button for utility but separate it visually if list is empty? */}
+
+                    {windows.length > 0 && <div className="w-px h-8 bg-gray-400/20 mx-2"></div>}
+
                     <button
-                        key={app.id}
-                        onClick={() => openApp(app.id)}
-                        className="group relative flex flex-col items-center gap-1 transition-all duration-300 hover:-translate-y-4 shrink-0 p-2"
+                        onClick={() => setLocked(true)}
+                        className="w-12 h-12 rounded-2xl bg-gray-100/80 flex items-center justify-center hover:bg-white transition-all shadow-inner shrink-0 group/lock hover:shadow-lg border border-transparent hover:border-white"
+                        title="Lock Screen"
                     >
-                        <div className={`w-14 h-14 rounded-2xl ${app.bg} flex items-center justify-center shadow-lg group-hover:shadow-xl border border-white/60 group-hover:scale-110 transition-all duration-300 ease-out`}>
-                            <app.icon size={26} className={app.color} />
-                        </div>
-
-                        {/* Tooltip */}
-                        <span className="absolute -top-12 bg-gray-800 text-white text-[10px] font-bold py-1 px-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-50 pointer-events-none translate-y-2 group-hover:translate-y-0 shadow-xl">
-                            {app.title}
-                        </span>
-
-                        {/* Active Indicator */}
-                        {windows.find(w => w.id === app.id) && (
-                            <div className={`w-1.5 h-1.5 ${theme.id === 'plant' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.5)]'} rounded-full mt-1`}></div>
-                        )}
+                        <Unlock size={20} className="text-gray-400 group-hover/lock:text-pink-500 transition-colors" />
                     </button>
-                ))}
-                <div className="w-px h-10 bg-gray-400/20 mx-2"></div>
-                <button
-                    onClick={() => setLocked(true)}
-                    className="w-14 h-14 rounded-2xl bg-gray-100/80 flex items-center justify-center hover:bg-white transition-all shadow-inner shrink-0 group hover:shadow-lg border border-transparent hover:border-white"
-                >
-                    <Unlock size={24} className="text-gray-400 group-hover:text-pink-500 transition-colors" />
-                </button>
+                </div>
             </div>
 
         </div>
