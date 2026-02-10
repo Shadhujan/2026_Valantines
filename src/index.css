@@ -6,25 +6,36 @@
 ::-webkit-scrollbar {
   width: 10px;
 }
+
 ::-webkit-scrollbar-track {
   background: #c0c0c0;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #808080;
   border: 1px solid #ffffff;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #505050;
 }
 
 body {
   margin: 0;
-  overflow: hidden; /* Prevent body scroll, let apps handle it */
-  font-family: 'Courier New', Courier, monospace; /* Fallback */
+  overflow: hidden;
+  /* Prevent body scroll, let apps handle it */
+  font-family: 'Courier New', Courier, monospace;
+  /* Fallback */
 }
 
 /* Pattern for active window title bar or other retro effects */
 .pattern-dots {
   background-image: radial-gradient(black 1px, transparent 1px);
   background-size: 3px 3px;
+}
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
 }

@@ -142,24 +142,120 @@ const VineBorder = () => {
 
     return (
         <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-            {/* Top Left Vine */}
-            <svg className="absolute top-0 left-0 w-64 h-64 text-emerald-400/40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M0,0 Q50,10 40,60 T80,90" />
-                <path d="M0,20 Q30,30 20,70" />
-                <circle cx="40" cy="60" r="3" fill="currentColor" className="animate-pulse" />
-                <circle cx="80" cy="90" r="2" fill="currentColor" />
-                <path d="M40,60 L50,50 M40,60 L30,50" strokeWidth="1" />
-            </svg>
-            {/* Top Right Vine */}
-            <svg className="absolute top-0 right-0 w-64 h-64 text-emerald-400/40 transform scale-x-[-1]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M0,0 Q50,10 40,60 T80,90" />
-                <path d="M0,20 Q30,30 20,70" />
-                <circle cx="40" cy="60" r="3" fill="currentColor" className="animate-pulse" />
-            </svg>
-            {/* Bottom Vines */}
-            <svg className="absolute bottom-0 left-0 w-full h-24 text-emerald-600/20" preserveAspectRatio="none" viewBox="0 0 1200 100">
-                <path d="M0,100 C150,50 300,100 450,60 C600,20 750,80 900,40 C1050,0 1200,100 1200,100 V120 H0 Z" fill="currentColor" />
-            </svg>
+            <style>{`
+                @keyframes sway {
+                    0%, 100% { transform: rotate(0deg); }
+                    50% { transform: rotate(2deg); }
+                }
+                @keyframes sway-reverse {
+                    0%, 100% { transform: rotate(0deg); }
+                    50% { transform: rotate(-2deg); }
+                }
+                @keyframes bloom {
+                    0% { transform: scale(0); opacity: 0; }
+                    50% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                .vine-sway { animation: sway 8s ease-in-out infinite; transform-origin: top left; }
+                .vine-sway-reverse { animation: sway-reverse 9s ease-in-out infinite; transform-origin: top right; }
+                .flower-bloom { animation: bloom 1s ease-out forwards; }
+            `}</style>
+
+            {/* Top Left - Lush Hanging Vines */}
+            <div className="absolute top-0 left-0 w-[400px] h-[400px] vine-sway opacity-90">
+                <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-lg">
+                    <defs>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.2" />
+                        </filter>
+                        <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6ee7b7" /> {/* emerald-300 */}
+                            <stop offset="100%" stopColor="#059669" /> {/* emerald-600 */}
+                        </linearGradient>
+                        <linearGradient id="vineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#10b981" />
+                            <stop offset="100%" stopColor="#047857" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Main Vine Line */}
+                    <path d="M0,0 C50,20 80,100 60,180 S100,280 140,320" fill="none" stroke="url(#vineGrad)" strokeWidth="3" strokeLinecap="round" filter="url(#shadow)" />
+                    <path d="M20,0 C70,10 120,80 130,150 S180,220 200,250" fill="none" stroke="url(#vineGrad)" strokeWidth="2" strokeLinecap="round" filter="url(#shadow)" opacity="0.8" />
+
+                    {/* Leaves - Group 1 */}
+                    <g fill="url(#leafGrad)">
+                        {/* P1 */}
+                        <path d="M60,180 Q40,180 30,160 Q60,150 60,180" className="origin-center hover:scale-110 transition-transform duration-500" />
+                        <path d="M60,180 Q80,180 90,200 Q60,210 60,180" className="origin-center hover:scale-110 transition-transform duration-500" />
+                        <path d="M140,320 Q120,320 110,300 Q140,290 140,320" />
+                        <path d="M130,150 Q110,150 100,130 Q130,120 130,150" />
+
+                        {/* Large Monstera-ish Leaf */}
+                        <path d="M60,80 C60,80 20,40 20,100 C20,140 60,160 80,120 C100,160 140,140 140,100 C140,40 100,80 100,80 Q80,20 60,80 Z" fill="#34d399" opacity="0.9" transform="rotate(-20 60 80) scale(0.8)" className="origin-center hover:rotate-12 transition-transform duration-1000" />
+                    </g>
+
+                    {/* Flowers */}
+                    <g className="flower-bloom" style={{ animationDelay: '0.5s' }}>
+                        <circle cx="140" cy="320" r="4" fill="#fef08a" />
+                        <circle cx="140" cy="320" r="8" fill="none" stroke="#fef08a" strokeWidth="1" strokeDasharray="2 2" className="animate-spin-slow" />
+                    </g>
+                </svg>
+            </div>
+
+            {/* Top Right - Hanging with Flowers */}
+            <div className="absolute top-0 right-0 w-[350px] h-[350px] vine-sway-reverse opacity-90">
+                <svg viewBox="0 0 350 350" className="w-full h-full drop-shadow-lg" style={{ transform: 'scaleX(-1)' }}>
+                    <defs>
+                        <linearGradient id="leafGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#a7f3d0" /> {/* emerald-200 */}
+                            <stop offset="100%" stopColor="#10b981" /> {/* emerald-500 */}
+                        </linearGradient>
+                    </defs>
+
+                    <path d="M0,0 C60,40 40,120 80,200 S160,250 180,300" fill="none" stroke="#059669" strokeWidth="2.5" filter="url(#shadow)" />
+                    <path d="M30,0 C90,20 120,100 140,150" fill="none" stroke="#059669" strokeWidth="1.5" opacity="0.7" />
+
+                    {/* Leaves */}
+                    <g fill="url(#leafGrad2)">
+                        <path d="M80,200 Q60,200 50,180 Q80,170 80,200" transform="scale(1.2)" />
+                        <path d="M140,150 Q160,150 170,170 Q140,180 140,150" />
+                        <path d="M180,300 C180,300 150,280 150,320 C150,340 180,340 180,300 Z" />
+                    </g>
+
+                    {/* White Flowers */}
+                    <circle cx="80" cy="200" r="3" fill="white" className="animate-pulse" />
+                    <circle cx="180" cy="300" r="4" fill="white" />
+                    <path d="M175,295 L185,305 M175,305 L185,295" stroke="#fecaca" strokeWidth="1" />
+                </svg>
+            </div>
+
+            {/* Bottom Borders - Grassy / Overgrown */}
+            <div className="absolute bottom-0 left-0 w-full h-[120px] opacity-100 flex items-end justify-between pointer-events-none">
+                <svg className="w-1/3 h-full text-emerald-600" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M0,100 L0,80 Q20,40 40,90 T80,100 Z" fill="url(#leafGrad)" opacity="0.8" />
+                    <path d="M-10,100 L0,60 Q30,20 60,100 Z" fill="#047857" opacity="0.6" />
+                </svg>
+                <svg className="w-1/3 h-full text-emerald-600 transform scale-x-[-1]" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M0,100 L0,70 Q30,30 50,90 T90,100 Z" fill="url(#leafGrad)" opacity="0.8" />
+                </svg>
+            </div>
+
+            {/* Ambient Floating Pollen/Spores */}
+            <div className="absolute inset-0 z-0">
+                {[...Array(5)].map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute bg-white/40 rounded-full blur-[1px] animate-pulse"
+                        style={{
+                            width: Math.random() * 4 + 2 + 'px',
+                            height: Math.random() * 4 + 2 + 'px',
+                            top: Math.random() * 100 + '%',
+                            left: Math.random() * 100 + '%',
+                            animationDuration: Math.random() * 3 + 2 + 's'
+                        }}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
