@@ -35,47 +35,94 @@ import {
    Features: Draggable Icons + Floating Hearts + Soft Aesthetic
 */
 
-// --- Styling Constants ---
-const GLASS_STYLE = "bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(255,105,180,0.15)] rounded-3xl";
+// --- Styling Constants & Theme Config ---
+
+const THEMES = {
+    love: {
+        id: 'love',
+        primary: 'from-pink-400 to-rose-400',
+        secondary: 'bg-white text-pink-500 hover:bg-pink-50 border-pink-100',
+        accent: 'text-pink-500',
+        accentBg: 'bg-pink-100',
+        windowBorder: 'border-pink-100/50',
+        windowTitleBar: 'bg-pink-50/50',
+        wallpaper: [
+            "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-200 via-purple-200 to-indigo-100",
+            "bg-[radial-gradient(at_top_left,_var(--tw-gradient-stops))] from-rose-100 via-teal-50 to-emerald-100",
+            "bg-gradient-to-t from-orange-100 to-sky-100"
+        ],
+        glass: "bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(255,105,180,0.15)]",
+        icon: '❤️',
+        particle: ['❤️', '💖', '💕']
+    },
+    plant: {
+        id: 'plant',
+        primary: 'from-emerald-500 to-teal-600',
+        secondary: 'bg-white text-emerald-600 hover:bg-emerald-50 border-emerald-100',
+        accent: 'text-emerald-600',
+        accentBg: 'bg-emerald-100',
+        windowBorder: 'border-emerald-100/50',
+        windowTitleBar: 'bg-emerald-50/50',
+        wallpaper: [
+            "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-200 via-emerald-100 to-teal-50",
+            "bg-[radial-gradient(at_bottom_left,_var(--tw-gradient-stops))] from-lime-100 via-green-100 to-emerald-200",
+            "bg-gradient-to-br from-green-50 to-emerald-100"
+        ],
+        glass: "bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_8px_32px_rgba(16,185,129,0.15)]",
+        icon: '🌿',
+        particle: ['🍃', '🌿', '🌱', '🍀']
+    }
+};
+
+const ThemeContext = React.createContext({
+    theme: THEMES.love,
+    toggleTheme: () => { }
+});
+
+const useTheme = () => React.useContext(ThemeContext);
+
 const POP_BUTTON = "transform active:scale-90 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:rotate-1";
 
-// --- Animated Background Component ---
-const FloatingHearts = () => {
-    const [hearts, setHearts] = useState([]);
+// --- Animated Components ---
+
+const FloatingParticles = () => {
+    const { theme } = useTheme();
+    const [particles, setParticles] = useState([]);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setHearts(current => {
-                const newHeart = {
+            setParticles(current => {
+                const newParticle = {
                     id: Date.now(),
                     left: Math.random() * 100,
                     animationDuration: 10 + Math.random() * 10,
                     size: 10 + Math.random() * 15,
-                    opacity: 0.3 + Math.random() * 0.5
+                    opacity: 0.3 + Math.random() * 0.5,
+                    char: theme.particle[Math.floor(Math.random() * theme.particle.length)]
                 };
-                // Keep limited number of hearts
-                const filtered = current.filter(h => Date.now() - h.id < h.animationDuration * 1000);
-                return [...filtered, newHeart];
+                const filtered = current.filter(p => Date.now() - p.id < p.animationDuration * 1000);
+                return [...filtered, newParticle];
             });
         }, 800);
         return () => clearInterval(interval);
-    }, []);
+    }, [theme]);
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            {hearts.map(h => (
+            {particles.map(p => (
                 <div
-                    key={h.id}
-                    className="absolute text-pink-300 pointer-events-none select-none"
+                    key={p.id}
+                    className="absolute pointer-events-none select-none transition-colors duration-1000"
                     style={{
-                        left: `${h.left}%`,
+                        left: `${p.left}%`,
                         bottom: '-20px',
-                        fontSize: `${h.size}px`,
-                        opacity: h.opacity,
-                        animation: `floatUp ${h.animationDuration}s linear forwards`
+                        fontSize: `${p.size}px`,
+                        opacity: p.opacity,
+                        animation: `floatUp ${p.animationDuration}s linear forwards`,
+                        color: theme.id === 'plant' ? '#10b981' : '#f9a8d4' // Emerald or Pink-300
                     }}
                 >
-                    {Math.random() > 0.5 ? '❤️' : '💖'}
+                    {p.char}
                 </div>
             ))}
             <style>{`
@@ -89,26 +136,57 @@ const FloatingHearts = () => {
     );
 };
 
+const VineBorder = () => {
+    const { theme } = useTheme();
+    if (theme.id !== 'plant') return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+            {/* Top Left Vine */}
+            <svg className="absolute top-0 left-0 w-64 h-64 text-emerald-400/40" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M0,0 Q50,10 40,60 T80,90" />
+                <path d="M0,20 Q30,30 20,70" />
+                <circle cx="40" cy="60" r="3" fill="currentColor" className="animate-pulse" />
+                <circle cx="80" cy="90" r="2" fill="currentColor" />
+                <path d="M40,60 L50,50 M40,60 L30,50" strokeWidth="1" />
+            </svg>
+            {/* Top Right Vine */}
+            <svg className="absolute top-0 right-0 w-64 h-64 text-emerald-400/40 transform scale-x-[-1]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M0,0 Q50,10 40,60 T80,90" />
+                <path d="M0,20 Q30,30 20,70" />
+                <circle cx="40" cy="60" r="3" fill="currentColor" className="animate-pulse" />
+            </svg>
+            {/* Bottom Vines */}
+            <svg className="absolute bottom-0 left-0 w-full h-24 text-emerald-600/20" preserveAspectRatio="none" viewBox="0 0 1200 100">
+                <path d="M0,100 C150,50 300,100 450,60 C600,20 750,80 900,40 C1050,0 1200,100 1200,100 V120 H0 Z" fill="currentColor" />
+            </svg>
+        </div>
+    );
+};
+
 // --- Utility Components ---
 
 const CuteButton = ({ children, onClick, className = "", variant = "primary" }) => {
-    const baseStyle = "px-4 py-2 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 " + POP_BUTTON;
+    const { theme } = useTheme();
+
+    // Dynamic variants based on theme
     const variants = {
-        primary: "bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-pink-200",
-        secondary: "bg-white text-pink-500 hover:bg-pink-50 border-2 border-pink-100",
+        primary: `bg-gradient-to-r ${theme.primary} text-white shadow-md`,
+        secondary: `bg-white ${theme.id === 'plant' ? 'text-emerald-600 border-emerald-100 hover:bg-emerald-50' : 'text-pink-500 border-pink-100 hover:bg-pink-50'} border-2`,
         ghost: "bg-transparent hover:bg-white/40 text-gray-600",
-        icon: "p-2 rounded-full hover:bg-white/60 text-pink-500 bg-white/40 backdrop-blur-sm",
+        icon: `p-2 rounded-full hover:bg-white/60 ${theme.id === 'plant' ? 'text-emerald-500' : 'text-pink-500'} bg-white/40 backdrop-blur-sm`,
         danger: "bg-red-400 text-white hover:bg-red-500"
     };
 
     return (
-        <button onClick={onClick} className={`${baseStyle} ${variants[variant] || variants.primary} ${className}`}>
+        <button onClick={onClick} className={`${className} px-4 py-2 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 ${POP_BUTTON} ${variants[variant] || variants.primary}`}>
             {children}
         </button>
     );
 };
 
 const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, size, onResize }) => {
+    const { theme } = useTheme();
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -172,16 +250,16 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
             style={{
                 left: position.x,
                 top: position.y,
-                width: size ? size.width : (width || "20rem"), // Fallback for transition
+                width: size ? size.width : "20rem",
                 height: size ? size.height : "auto",
                 zIndex: isActive ? 50 : 10
             }}
-            className={`absolute flex flex-col overflow-hidden transition-shadow duration-300 ${GLASS_STYLE} ${isActive ? 'shadow-[0_20px_50px_rgba(255,182,193,0.3)] ring-4 ring-white/50' : 'opacity-90'}`}
+            className={`absolute flex flex-col overflow-hidden transition-all duration-300 rounded-3xl ${theme.glass} ${isActive ? `shadow-2xl ring-4 ring-white/50` : 'opacity-90'}`}
         >
             {/* Title Bar */}
-            <div className="h-12 flex justify-between items-center px-4 cursor-move bg-pink-50/50 border-b border-pink-100/50 select-none shrink-0 window-handle">
+            <div className={`h-12 flex justify-between items-center px-4 cursor-move ${theme.windowTitleBar} ${theme.windowBorder} border-b select-none shrink-0 window-handle`}>
                 <span className="font-bold text-gray-600 text-sm flex items-center gap-2">
-                    <Heart size={14} className="text-pink-400 fill-pink-400" /> {title}
+                    <span className={theme.accent}>{theme.icon}</span> {title}
                 </span>
                 <div className="flex gap-2 group window-control">
                     <button onClick={(e) => { e.stopPropagation(); onMinimize(); }} className="w-3 h-3 rounded-full bg-yellow-300 hover:scale-125 transition-transform shadow-sm" />
@@ -197,7 +275,7 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
             {/* Resize Handle */}
             <div
                 onMouseDown={handleResizeStart}
-                className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center text-pink-300 hover:text-pink-500 z-50"
+                className={`absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center ${theme.accent} hover:scale-110 z-50`}
             >
                 <Maximize2 size={12} className="transform rotate-90" />
             </div>
@@ -207,48 +285,57 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
 
 // --- Applications ---
 
-const NotesApp = () => (
-    <div className="p-6 bg-yellow-50/50 h-full min-h-[300px] font-serif text-gray-700 relative">
-        <div className="absolute top-0 left-0 w-full h-8 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)] opacity-50"></div>
-        <div className="flex justify-center mb-4">
-            <div className="bg-pink-100/50 px-3 py-1 rounded-full text-xs text-pink-500 font-bold uppercase tracking-widest">Love Letter</div>
-        </div>
-        <h2 className="text-3xl font-bold text-pink-500 mb-6 text-center italic">My Dearest,</h2>
-        <p className="leading-relaxed mb-4 text-lg">
-            I wanted to make something that feels as beautiful as you make my life feel.
-        </p>
-        <p className="leading-relaxed mb-4 text-lg">
-            Every pixel here was coded with you in mind. You're my favorite notification, my best view, and my home screen.
-        </p>
-        <div className="mt-8 flex justify-end">
-            <div className="rotate-3">
-                <p className="font-bold text-pink-400 text-xl font-handwriting">Love,</p>
-                <p className="font-bold text-gray-600">Your Dev Boyfriend (Bubu)</p>
+const NotesApp = () => {
+    const { theme } = useTheme();
+    return (
+        <div className={`p-6 ${theme.id === 'plant' ? 'bg-amber-50/50' : 'bg-yellow-50/50'} h-full min-h-[300px] font-serif text-gray-700 relative`}>
+            <div className={`absolute top-0 left-0 w-full h-8 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)] opacity-50`}></div>
+            <div className="flex justify-center mb-4">
+                <div className={`${theme.accentBg} px-3 py-1 rounded-full text-xs ${theme.accent} font-bold uppercase tracking-widest`}>
+                    {theme.id === 'plant' ? 'Nature Note' : 'Love Letter'}
+                </div>
+            </div>
+            <h2 className={`text-3xl font-bold ${theme.accent} mb-6 text-center italic`}>My Dearest,</h2>
+            <p className="leading-relaxed mb-4 text-lg">
+                I wanted to make something that feels as beautiful as you make my life feel.
+            </p>
+            <p className="leading-relaxed mb-4 text-lg">
+                Every pixel here was coded with you in mind. You're my favorite notification, my best view, and my home screen.
+            </p>
+            <div className="mt-8 flex justify-end">
+                <div className="rotate-3">
+                    <p className={`font-bold ${theme.id === 'plant' ? 'text-emerald-500' : 'text-pink-400'} text-xl font-handwriting`}>Love,</p>
+                    <p className="font-bold text-gray-600">Your Dev Boyfriend (Bubu)</p>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
-const RecycleBinApp = () => (
-    <div className="p-8 h-full flex flex-col items-center justify-center text-center">
-        <div className="w-28 h-28 bg-white/50 rounded-full flex items-center justify-center mb-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] ring-4 ring-white">
-            <Trash2 size={48} className="text-pink-300" />
+const RecycleBinApp = () => {
+    const { theme } = useTheme();
+    return (
+        <div className="p-8 h-full flex flex-col items-center justify-center text-center">
+            <div className="w-28 h-28 bg-white/50 rounded-full flex items-center justify-center mb-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] ring-4 ring-white">
+                <Trash2 size={48} className={theme.id === 'plant' ? 'text-emerald-300' : 'text-pink-300'} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-600 mb-2">{theme.id === 'plant' ? 'Compost Bin' : 'My Love for You'}</h2>
+            <p className={`text-gray-500 max-w-xs text-sm ${theme.id === 'plant' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} p-4 rounded-xl border`}>
+                <strong className={`${theme.id === 'plant' ? 'text-emerald-400' : 'text-red-400'} block mb-1`}>Warning:</strong>
+                {theme.id === 'plant' ? 'Turning bad vibes into good memories.' : 'Cannot delete. This file is write-protected and infinitely large.'}
+            </p>
+            <div className="mt-8 text-xs text-gray-400 font-mono">Status: PERMANENT</div>
         </div>
-        <h2 className="text-xl font-bold text-gray-600 mb-2">My Love for You</h2>
-        <p className="text-gray-500 max-w-xs text-sm bg-red-50 p-4 rounded-xl border border-red-100">
-            <strong className="text-red-400 block mb-1">Warning:</strong>
-            Cannot delete. This file is write-protected and infinitely large.
-        </p>
-        <div className="mt-8 text-xs text-gray-400 font-mono">Status: PERMANENT</div>
-    </div>
-);
+    );
+};
 
 const GalleryApp = () => {
+    const { theme } = useTheme();
     const photos = [
-        { color: "bg-rose-200", caption: "First Date 🍝" },
-        { color: "bg-blue-200", caption: "Beach Day 🌊" },
-        { color: "bg-purple-200", caption: "Hiking 🌲" },
-        { color: "bg-yellow-200", caption: "Just Us ❤️" },
+        { color: theme.id === 'plant' ? "bg-emerald-200" : "bg-rose-200", caption: "First Date 🍝" },
+        { color: theme.id === 'plant' ? "bg-teal-200" : "bg-blue-200", caption: "Beach Day 🌊" },
+        { color: theme.id === 'plant' ? "bg-green-200" : "bg-purple-200", caption: "Hiking 🌲" },
+        { color: theme.id === 'plant' ? "bg-lime-200" : "bg-yellow-200", caption: "Just Us ❤️" },
     ];
 
     return (
@@ -272,37 +359,43 @@ const GalleryApp = () => {
     );
 };
 
-const MusicApp = () => (
-    <div className="bg-gradient-to-br from-indigo-400/90 to-purple-400/90 p-6 text-white h-full flex flex-col items-center justify-center relative overflow-hidden">
+const MusicApp = () => {
+    const { theme } = useTheme();
+    const bgGradient = theme.id === 'plant' ? 'from-teal-400/90 to-emerald-400/90' : 'from-indigo-400/90 to-purple-400/90';
 
-        <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] mb-8 bg-white/20 backdrop-blur-md flex items-center justify-center animate-[spin_8s_linear_infinite]">
-            <Music size={56} className="text-white" />
-        </div>
+    return (
+        <div className={`bg-gradient-to-br ${bgGradient} p-6 text-white h-full flex flex-col items-center justify-center relative overflow-hidden`}>
 
-        <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold tracking-tight">Perfect</h3>
-            <p className="text-white/80 text-sm font-medium tracking-widest uppercase mt-1">Ed Sheeran</p>
-        </div>
+            <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] mb-8 bg-white/20 backdrop-blur-md flex items-center justify-center animate-[spin_8s_linear_infinite]">
+                <Music size={56} className="text-white" />
+            </div>
 
-        <div className="w-full bg-white/20 rounded-full h-1.5 mb-2 overflow-hidden">
-            <div className="h-full w-1/3 bg-white rounded-full shadow-[0_0_10px_white]"></div>
-        </div>
-        <div className="flex justify-between w-full text-[10px] font-bold text-white/60 mb-8 uppercase tracking-wider">
-            <span>1:12</span>
-            <span>4:23</span>
-        </div>
+            <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold tracking-tight">Perfect</h3>
+                <p className="text-white/80 text-sm font-medium tracking-widest uppercase mt-1">Ed Sheeran</p>
+            </div>
 
-        <div className="flex items-center gap-8">
-            <button className="hover:text-pink-200 transition-colors transform hover:scale-110"><SkipBack fill="currentColor" size={24} /></button>
-            <button className="w-16 h-16 bg-white text-purple-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all active:scale-95">
-                <Play fill="currentColor" className="ml-1" size={28} />
-            </button>
-            <button className="hover:text-pink-200 transition-colors transform hover:scale-110"><SkipForward fill="currentColor" size={24} /></button>
+            <div className="w-full bg-white/20 rounded-full h-1.5 mb-2 overflow-hidden">
+                <div className="h-full w-1/3 bg-white rounded-full shadow-[0_0_10px_white]"></div>
+            </div>
+            <div className="flex justify-between w-full text-[10px] font-bold text-white/60 mb-8 uppercase tracking-wider">
+                <span>1:12</span>
+                <span>4:23</span>
+            </div>
+
+            <div className="flex items-center gap-8">
+                <button className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipBack fill="currentColor" size={24} /></button>
+                <button className={`w-16 h-16 bg-white ${theme.id === 'plant' ? 'text-emerald-500' : 'text-purple-500'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all active:scale-95`}>
+                    <Play fill="currentColor" className="ml-1" size={28} />
+                </button>
+                <button className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipForward fill="currentColor" size={24} /></button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const CouponApp = () => {
+    const { theme } = useTheme();
     const [coupons, setCoupons] = useState([
         { id: 1, title: "Back Massage", icon: "💆‍♀️", redeemed: false },
         { id: 2, title: "Dinner Date", icon: "🍝", redeemed: false },
@@ -317,15 +410,15 @@ const CouponApp = () => {
     return (
         <div className="p-6 h-full overflow-y-auto">
             <div className="text-center mb-6">
-                <div className="inline-block p-3 bg-pink-100 rounded-full mb-2">
-                    <Gift size={24} className="text-pink-500" />
+                <div className={`inline-block p-3 ${theme.accentBg} rounded-full mb-2`}>
+                    <Gift size={24} className={theme.accent} />
                 </div>
-                <h3 className="text-gray-700 font-bold text-lg">Love Coupons</h3>
+                <h3 className="text-gray-700 font-bold text-lg">{theme.id === 'plant' ? 'Care Coupons' : 'Love Coupons'}</h3>
                 <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Tap to redeem a treat!</p>
             </div>
             <div className="space-y-4">
                 {coupons.map(c => (
-                    <div key={c.id} className={`group relative p-4 rounded-2xl border-2 border-dashed transition-all duration-300 ${c.redeemed ? 'border-gray-200 bg-gray-50 opacity-60 grayscale' : 'border-pink-200 bg-white hover:border-pink-400 hover:shadow-lg hover:-translate-y-1'}`}>
+                    <div key={c.id} className={`group relative p-4 rounded-2xl border-2 border-dashed transition-all duration-300 ${c.redeemed ? 'border-gray-200 bg-gray-50 opacity-60 grayscale' : `${theme.id === 'plant' ? 'border-emerald-200 hover:border-emerald-400' : 'border-pink-200 hover:border-pink-400'} bg-white hover:shadow-lg hover:-translate-y-1`}`}>
                         <div className="flex items-center justify-between relative z-10">
                             <div className="flex items-center gap-4">
                                 <span className="text-3xl bg-gray-50 w-12 h-12 flex items-center justify-center rounded-full shadow-sm">{c.icon}</span>
@@ -336,7 +429,7 @@ const CouponApp = () => {
                             </div>
                             <button
                                 onClick={() => !c.redeemed && redeem(c.id)}
-                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${c.redeemed ? 'bg-transparent text-gray-400 cursor-default border border-gray-200' : 'bg-pink-500 text-white hover:bg-pink-600 shadow-md hover:shadow-lg shadow-pink-200'}`}
+                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${c.redeemed ? 'bg-transparent text-gray-400 cursor-default border border-gray-200' : `${theme.id === 'plant' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200' : 'bg-pink-500 hover:bg-pink-600 shadow-pink-200'} text-white shadow-md hover:shadow-lg`}`}
                             >
                                 {c.redeemed ? 'Used' : 'Use'}
                             </button>
@@ -351,46 +444,50 @@ const CouponApp = () => {
     );
 };
 
-const ChatApp = () => (
-    <div className="flex flex-col h-full bg-white/50">
-        <div className="p-4 border-b border-gray-100/50 flex items-center gap-3 bg-white/40 backdrop-blur-md">
-            <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-300 to-purple-300 flex items-center justify-center text-white font-bold shadow-md">BF</div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
-            </div>
-            <div>
-                <h4 className="font-bold text-sm text-gray-700">Boyfriend ❤️</h4>
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Always Online</span>
-            </div>
-        </div>
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-            <div className="flex justify-start">
-                <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
-                    Happy Valentine's Day babe! 🌹
+const ChatApp = () => {
+    const { theme } = useTheme();
+    return (
+        <div className="flex flex-col h-full bg-white/50">
+            <div className="p-4 border-b border-gray-100/50 flex items-center gap-3 bg-white/40 backdrop-blur-md">
+                <div className="relative">
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${theme.id === 'plant' ? 'from-emerald-300 to-teal-300' : 'from-pink-300 to-purple-300'} flex items-center justify-center text-white font-bold shadow-md`}>BF</div>
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+                </div>
+                <div>
+                    <h4 className="font-bold text-sm text-gray-700">Boyfriend {theme.icon}</h4>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Always Online</span>
                 </div>
             </div>
-            <div className="flex justify-end">
-                <div className="bg-gradient-to-r from-pink-500 to-rose-400 text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-md shadow-pink-200 max-w-[85%] text-sm">
-                    Aww thank you! I love you! ❤️
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                <div className="flex justify-start">
+                    <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
+                        Happy Valentine's Day babe! {theme.id === 'plant' ? '🪴' : '🌹'}
+                    </div>
+                </div>
+                <div className="flex justify-end">
+                    <div className={`bg-gradient-to-r ${theme.primary} text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-md ${theme.id === 'plant' ? 'shadow-emerald-200' : 'shadow-pink-200'} max-w-[85%] text-sm`}>
+                        Aww thank you! I love you! {theme.icon}
+                    </div>
+                </div>
+                <div className="flex justify-start">
+                    <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
+                        I made this website just for you. Hope you like it! <br />
+                        Try dragging the icons around!
+                    </div>
                 </div>
             </div>
-            <div className="flex justify-start">
-                <div className="bg-white text-gray-600 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] text-sm border border-gray-100">
-                    I made this website just for you. Hope you like it! <br />
-                    Try dragging the icons around!
-                </div>
+            <div className="p-3 border-t border-gray-100/50 flex gap-2 bg-white/40">
+                <input type="text" placeholder="Send a message..." disabled className="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none shadow-sm text-gray-500 border border-gray-100" />
+                <button className={`w-9 h-9 rounded-full ${theme.id === 'plant' ? 'bg-emerald-500 shadow-emerald-200' : 'bg-pink-500 shadow-pink-200'} text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform`}>
+                    <Send size={16} className="ml-0.5" />
+                </button>
             </div>
         </div>
-        <div className="p-3 border-t border-gray-100/50 flex gap-2 bg-white/40">
-            <input type="text" placeholder="Send a message..." disabled className="flex-1 bg-white rounded-full px-4 py-2 text-sm outline-none shadow-sm text-gray-500 border border-gray-100" />
-            <button className="w-9 h-9 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-lg shadow-pink-200 hover:scale-110 transition-transform">
-                <Send size={16} className="ml-0.5" />
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 const SnakeGameApp = () => {
+    const { theme } = useTheme();
     const GRID_SIZE = 15;
     const INITIAL_SNAKE = [{ x: 7, y: 7 }];
     const [snake, setSnake] = useState(INITIAL_SNAKE);
@@ -459,18 +556,18 @@ const SnakeGameApp = () => {
     return (
         <div className="bg-white/50 p-4 h-full flex flex-col items-center justify-center">
             <div className="mb-4 flex justify-between w-full px-4 items-center max-w-[300px]">
-                <span className="font-bold text-pink-500 bg-pink-100 px-3 py-1 rounded-full text-xs uppercase tracking-wide">Score: {score}</span>
-                <button onClick={restart} className="text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm text-gray-400 hover:text-pink-500 uppercase tracking-wide border border-gray-100 hover:border-pink-200 transition-colors">Restart</button>
+                <span className={`font-bold ${theme.accent} ${theme.accentBg} px-3 py-1 rounded-full text-xs uppercase tracking-wide`}>Score: {score}</span>
+                <button onClick={restart} className={`text-[10px] font-bold bg-white px-3 py-1 rounded-full shadow-sm text-gray-400 hover:${theme.accent} uppercase tracking-wide border border-gray-100 hover:${theme.id === 'plant' ? 'border-emerald-200' : 'border-pink-200'} transition-colors`}>Restart</button>
             </div>
 
             <div
-                className="relative bg-white rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-4 border-white overflow-hidden ring-4 ring-pink-100"
+                className={`relative bg-white rounded-2xl shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-4 border-white overflow-hidden ring-4 ${theme.id === 'plant' ? 'ring-emerald-100' : 'ring-pink-100'}`}
                 style={{ width: GRID_SIZE * 18, height: GRID_SIZE * 18 }}
             >
                 {snake.map((seg, i) => (
                     <div
                         key={i}
-                        className="absolute bg-gradient-to-br from-pink-400 to-rose-400 rounded-sm shadow-sm"
+                        className={`absolute bg-gradient-to-br ${theme.primary} rounded-sm shadow-sm`}
                         style={{
                             left: seg.x * 18,
                             top: seg.y * 18,
@@ -485,7 +582,7 @@ const SnakeGameApp = () => {
                     className="absolute flex items-center justify-center text-sm animate-bounce drop-shadow-md"
                     style={{ left: food.x * 18, top: food.y * 18, width: 18, height: 18 }}
                 >
-                    ❤️
+                    {theme.id === 'plant' ? '🍎' : '❤️'}
                 </div>
 
                 {gameOver && (
@@ -500,84 +597,88 @@ const SnakeGameApp = () => {
     );
 };
 
-const BrowserApp = ({ onOpenApp }) => (
-    <div className="flex flex-col h-full bg-white/80">
-        {/* Browser Bar */}
-        <div className="p-3 bg-white/80 border-b border-gray-100 flex flex-col gap-2 shadow-sm z-10 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-                <div className="flex gap-1.5 mr-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-300"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+const BrowserApp = ({ onOpenApp }) => {
+    const { theme } = useTheme();
+    return (
+        <div className="flex flex-col h-full bg-white/80">
+            {/* Browser Bar */}
+            <div className="p-3 bg-white/80 border-b border-gray-100 flex flex-col gap-2 shadow-sm z-10 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    <div className="flex gap-1.5 mr-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-300"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+                    </div>
+                    <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-full px-4 py-1.5 text-xs text-gray-400 flex items-center gap-2 font-mono">
+                        <Unlock size={10} className={theme.id === 'plant' ? 'text-emerald-300' : 'text-pink-300'} />
+                        <span>lovelanguage.com/reasons-why</span>
+                    </div>
+                    <RefreshCw size={14} className="text-gray-400 hover:rotate-180 transition-transform duration-500 cursor-pointer" />
                 </div>
-                <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-full px-4 py-1.5 text-xs text-gray-400 flex items-center gap-2 font-mono">
-                    <Unlock size={10} className="text-pink-300" />
-                    <span>lovelanguage.com/reasons-why</span>
+
+                {/* Bookmarks Bar */}
+                <div className="flex gap-2 text-xs text-gray-500 font-medium">
+                    <button className="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1 transition-colors">
+                        <Star size={10} className="text-yellow-400 fill-yellow-400" /> Favorites
+                    </button>
+                    <div className="w-px h-4 bg-gray-300 my-auto"></div>
+
+                    {/* Pumpkin App Bookmark */}
+                    <button
+                        onClick={() => onOpenApp && onOpenApp('pumpkin')}
+                        className={`hover:${theme.accentBg} hover:${theme.accent} px-2 py-1 rounded flex items-center gap-1 transition-colors group`}
+                    >
+                        <Heart size={10} className={`${theme.id === 'plant' ? 'text-emerald-300' : 'text-pink-300'} group-hover:${theme.accent} transition-colors`} />
+                        My Pumpkin
+                    </button>
                 </div>
-                <RefreshCw size={14} className="text-gray-400 hover:rotate-180 transition-transform duration-500 cursor-pointer" />
             </div>
 
-            {/* Bookmarks Bar */}
-            <div className="flex gap-2 text-xs text-gray-500 font-medium">
-                <button className="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1 transition-colors">
-                    <Star size={10} className="text-yellow-400 fill-yellow-400" /> Favorites
-                </button>
-                <div className="w-px h-4 bg-gray-300 my-auto"></div>
+            {/* Web Content */}
+            <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-white to-gray-50">
+                <div className="max-w-md mx-auto">
+                    <h1 className={`text-3xl font-bold text-gray-800 mb-8 border-b-4 ${theme.id === 'plant' ? 'border-emerald-100' : 'border-pink-100'} pb-2 inline-block`}>Top Reasons <span className={theme.accent}>I {theme.icon} U</span></h1>
 
-                {/* Pumpkin App Bookmark */}
-                <button
-                    onClick={() => onOpenApp && onOpenApp('pumpkin')}
-                    className="hover:bg-pink-50 hover:text-pink-500 px-2 py-1 rounded flex items-center gap-1 transition-colors group"
-                >
-                    <Heart size={10} className="text-pink-300 group-hover:text-pink-500 transition-colors" />
-                    My Pumpkin
-                </button>
+                    <div className="space-y-6">
+                        <div className="flex gap-5 items-start group">
+                            <div className={`w-10 h-10 rounded-2xl ${theme.accentBg} flex items-center justify-center ${theme.accent} font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>1</div>
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                                <h3 className="font-bold text-gray-700 mb-1">Your Smile (v2.0)</h3>
+                                <p className="text-gray-500 text-sm leading-relaxed">It literally lights up the room. No CSS required.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-5 items-start group">
+                            <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">2</div>
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                                <h3 className="font-bold text-gray-700 mb-1">Debugging Life</h3>
+                                <p className="text-gray-500 text-sm leading-relaxed">You help me fix my problems even when I don't have a console log.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-5 items-start group">
+                            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">3</div>
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
+                                <h3 className="font-bold text-gray-700 mb-1">Comfy Mode</h3>
+                                <p className="text-gray-500 text-sm leading-relaxed">You look beautiful in a dress, but even better in my hoodie.</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 mt-10 text-center">
+                            <div className="mx-auto bg-white w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-sm text-2xl">🍪</div>
+                            <h4 className="text-blue-600 font-bold mb-1 text-sm">Cookie Policy</h4>
+                            <p className="text-xs text-blue-400 mb-4">This website uses cookies to store all my love for you.</p>
+                            <button className="bg-blue-500 text-white text-xs px-6 py-2 rounded-full font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform">Accept All Love</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        {/* Web Content */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-b from-white to-gray-50">
-            <div className="max-w-md mx-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8 border-b-4 border-pink-100 pb-2 inline-block">Top Reasons <span className="text-pink-500">I ❤️ U</span></h1>
-
-                <div className="space-y-6">
-                    <div className="flex gap-5 items-start group">
-                        <div className="w-10 h-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">1</div>
-                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                            <h3 className="font-bold text-gray-700 mb-1">Your Smile (v2.0)</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">It literally lights up the room. No CSS required.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-5 items-start group">
-                        <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">2</div>
-                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                            <h3 className="font-bold text-gray-700 mb-1">Debugging Life</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">You help me fix my problems even when I don't have a console log.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-5 items-start group">
-                        <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">3</div>
-                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
-                            <h3 className="font-bold text-gray-700 mb-1">Comfy Mode</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">You look beautiful in a dress, but even better in my hoodie.</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 mt-10 text-center">
-                        <div className="mx-auto bg-white w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-sm text-2xl">🍪</div>
-                        <h4 className="text-blue-600 font-bold mb-1 text-sm">Cookie Policy</h4>
-                        <p className="text-xs text-blue-400 mb-4">This website uses cookies to store all my love for you.</p>
-                        <button className="bg-blue-500 text-white text-xs px-6 py-2 rounded-full font-bold shadow-lg shadow-blue-200 hover:scale-105 transition-transform">Accept All Love</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-);
+    );
+};
 
 const LoveQuestApp = () => {
+    const { theme } = useTheme();
     const [gameState, setGameState] = useState('welcome'); // welcome, playing, reward, final
     const [level, setLevel] = useState(0);
     const [input, setInput] = useState("");
@@ -600,12 +701,12 @@ const LoveQuestApp = () => {
             id: 2,
             type: 'find',
             title: "Level 2: Hidden Love",
-            question: "Find the unique heart hidden among the broken ones!",
+            question: theme.id === 'plant' ? "Find the unique leaf hidden among the broken ones!" : "Find the unique heart hidden among the broken ones!",
             gridSize: 25,
             targetIndex: 12,
             memory: "You healed my heart just like you found this one.",
             rewardImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b9?w=400",
-            bg: "bg-pink-100"
+            bg: theme.id === 'plant' ? "bg-emerald-100" : "bg-pink-100"
         },
         {
             id: 3,
@@ -638,7 +739,7 @@ const LoveQuestApp = () => {
             setGameState('reward');
             setError("");
         } else {
-            setError("Not quite! Try again ❤️");
+            setError("Not quite! Try again " + theme.icon);
         }
     };
 
@@ -657,8 +758,8 @@ const LoveQuestApp = () => {
     // 1. Welcome Screen
     if (gameState === 'welcome') return (
         <div className="p-8 h-full flex flex-col items-center justify-center text-center bg-gradient-to-b from-blue-50 to-pink-50">
-            <div className="w-24 h-24 bg-pink-100 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-md">
-                <Map size={48} className="text-pink-500" />
+            <div className={`w-24 h-24 ${theme.accentBg} rounded-full flex items-center justify-center mb-6 animate-bounce shadow-md`}>
+                <Map size={48} className={theme.accent} />
             </div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">The Love Quest</h2>
             <p className="text-gray-500 mb-8 max-w-xs">A mini adventure through our memories. Solve clues to unlock my heart!</p>
@@ -668,27 +769,27 @@ const LoveQuestApp = () => {
 
     // 2. Final Reward Screen (Merged: Voucher + Valentine Proposal)
     if (gameState === 'final') return (
-        <div className="p-8 h-full flex flex-col items-center justify-center text-center bg-gradient-to-br from-rose-100 to-pink-50 overflow-hidden relative">
+        <div className={`p-8 h-full flex flex-col items-center justify-center text-center bg-gradient-to-br ${theme.id === 'plant' ? 'from-emerald-100 to-green-50' : 'from-rose-100 to-pink-50'} overflow-hidden relative`}>
             <div className="absolute inset-0 pointer-events-none">
                 {[...Array(20)].map((_, i) => (
-                    <div key={i} className="absolute animate-pulse text-2xl" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random()}s` }}>❤️</div>
+                    <div key={i} className="absolute animate-pulse text-2xl" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random()}s` }}>{theme.icon}</div>
                 ))}
             </div>
             <Sparkles size={48} className="text-yellow-400 mb-4 animate-spin-slow" />
-            <h2 className="text-3xl font-extrabold text-pink-600 mb-4">Quest Complete! 🎉</h2>
+            <h2 className={`text-3xl font-extrabold ${theme.id === 'plant' ? 'text-emerald-600' : 'text-pink-600'} mb-4`}>Quest Complete! 🎉</h2>
 
-            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-xl transform rotate-1 border-4 border-pink-200 mb-6 max-w-sm">
+            <div className={`bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-xl transform rotate-1 border-4 ${theme.id === 'plant' ? 'border-emerald-200' : 'border-pink-200'} mb-6 max-w-sm`}>
                 <p className="font-handwriting text-xl text-gray-700 mb-4">
                     "You know me better than anyone else. Thank you for being my player 2."
                 </p>
                 <div className="border-t border-dashed border-gray-300 pt-4 mt-4">
                     <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Reward Unlocked</p>
-                    <div className="font-bold text-xl text-pink-500 bg-pink-50 py-2 rounded-lg border border-pink-100">Dinner Date Voucher 🎟️</div>
+                    <div className={`font-bold text-xl ${theme.accent} ${theme.accentBg} py-2 rounded-lg border ${theme.windowBorder}`}>Dinner Date Voucher 🎟️</div>
                     <p className="text-[10px] text-gray-500 mt-1">Valid: Forever</p>
                 </div>
                 <div className="mt-6">
                     <p className="font-bold text-gray-800 text-xl mb-4">Will you be my Valentine?</p>
-                    <CuteButton onClick={() => alert("Yay! I love you! ❤️")} className="w-full shadow-pink-300">YES! 💘</CuteButton>
+                    <CuteButton onClick={() => alert("Yay! I love you! " + theme.icon)} className={`w-full ${theme.id === 'plant' ? 'shadow-emerald-300' : 'shadow-pink-300'}`}>YES! 💘</CuteButton>
                 </div>
             </div>
             <CuteButton onClick={() => { setLevel(0); setGameState('welcome'); }} variant="ghost" className="text-xs">Play Again</CuteButton>
@@ -723,8 +824,8 @@ const LoveQuestApp = () => {
     return (
         <div className="h-full flex flex-col bg-white/50">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white/40">
-                <span className="text-xs font-bold text-pink-500 uppercase tracking-wider">{current.title}</span>
-                <span className="text-xs bg-pink-100 text-pink-600 px-2 py-1 rounded-full">{level + 1} / {levels.length}</span>
+                <span className={`text-xs font-bold ${theme.accent} uppercase tracking-wider`}>{current.title}</span>
+                <span className={`text-xs ${theme.accentBg} ${theme.accent} px-2 py-1 rounded-full`}>{level + 1} / {levels.length}</span>
             </div>
 
             <div className="flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
@@ -734,7 +835,7 @@ const LoveQuestApp = () => {
                         <h3 className="text-lg font-bold text-gray-700">{current.question}</h3>
                     </div>
                 ) : (
-                    <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-pink-100 w-full max-w-xs text-center">
+                    <div className={`mb-6 p-4 bg-white rounded-2xl shadow-sm border ${theme.windowBorder} w-full max-w-xs text-center`}>
                         <span className="text-4xl mb-2 block">🧩</span>
                         <h3 className="font-bold text-gray-700 text-lg mb-2">{current.question}</h3>
                     </div>
@@ -748,7 +849,7 @@ const LoveQuestApp = () => {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-pink-100 focus:border-pink-300 outline-none text-center bg-white/80 backdrop-blur-sm shadow-inner text-gray-700 font-bold"
+                            className={`w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:${theme.windowBorder} outline-none text-center bg-white/80 backdrop-blur-sm shadow-inner text-gray-700 font-bold`}
                             placeholder="Your answer..."
                             autoFocus
                         />
@@ -767,9 +868,9 @@ const LoveQuestApp = () => {
                                     if (i === current.targetIndex) { setGameState('reward'); }
                                     else { setError("Not that one!"); setTimeout(() => setError(""), 1000); }
                                 }}
-                                className="w-10 h-10 flex items-center justify-center text-2xl hover:scale-125 transition-transform bg-white rounded-lg shadow-sm border border-gray-100 hover:border-pink-300"
+                                className={`w-10 h-10 flex items-center justify-center text-2xl hover:scale-125 transition-transform bg-white rounded-lg shadow-sm border border-gray-100 hover:${theme.windowBorder}`}
                             >
-                                {i === current.targetIndex ? '❤️' : '💔'}
+                                {i === current.targetIndex ? theme.icon : '💔'}
                             </button>
                         ))}
                     </div>
@@ -808,17 +909,12 @@ const APP_DATA = [
 
 // --- Main Desktop ---
 
-const App = () => {
+const LoveOS = () => {
+    const { theme, toggleTheme } = useTheme();
     const [wallpaper, setWallpaper] = useState(0);
     const [locked, setLocked] = useState(true);
     const [password, setPassword] = useState("");
     const [bsod, setBsod] = useState(false);
-
-    const wallpapers = [
-        "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-200 via-purple-200 to-indigo-100",
-        "bg-[radial-gradient(at_top_left,_var(--tw-gradient-stops))] from-rose-100 via-teal-50 to-emerald-100",
-        "bg-gradient-to-t from-orange-100 to-sky-100"
-    ];
 
     const [windows, setWindows] = useState([]);
     const [activeId, setActiveId] = useState(null);
@@ -959,8 +1055,9 @@ const App = () => {
 
     if (locked) {
         return (
-            <div className="fixed inset-0 bg-black/20 backdrop-blur-2xl flex flex-col items-center justify-center text-white z-50">
-                <FloatingHearts />
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-2xl flex flex-col items-center justify-center text-white z-50 transition-all duration-1000">
+                <FloatingParticles />
+                <VineBorder />
 
                 <div className="mb-10 flex flex-col items-center z-10 relative">
                     <div className="w-28 h-28 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,255,255,0.4)] ring-4 ring-white/30 animate-pulse">
@@ -981,8 +1078,12 @@ const App = () => {
                         placeholder="Enter 'love'..."
                         className="w-full px-8 py-4 rounded-full bg-white/20 backdrop-blur-xl border border-white/40 text-center text-white placeholder-pink-100/70 outline-none focus:bg-white/30 transition-all shadow-xl text-lg tracking-widest"
                     />
-                    <button className="w-full py-4 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-bold shadow-lg shadow-pink-500/30 transition-all transform active:scale-95 text-lg uppercase tracking-wider flex items-center justify-center gap-2">
-                        <span>Log In</span> <Heart size={18} fill="currentColor" />
+                    <button className={`w-full py-4 rounded-full bg-gradient-to-r ${theme.primary} text-white font-bold shadow-lg transition-all transform active:scale-95 text-lg uppercase tracking-wider flex items-center justify-center gap-2`}>
+                        <span>Log In</span> {theme.icon}
+                    </button>
+                    {/* Theme Toggle on Lock Screen for ease */}
+                    <button type="button" onClick={toggleTheme} className="text-white/60 hover:text-white text-xs mt-4 flex items-center justify-center gap-2">
+                        <RefreshCw size={12} /> Switch Theme
                     </button>
                 </form>
             </div>
@@ -990,17 +1091,21 @@ const App = () => {
     }
 
     return (
-        <div className={`fixed inset-0 overflow-hidden transition-all duration-1000 ${wallpapers[wallpaper]}`}>
-            <FloatingHearts />
+        <div className={`fixed inset-0 overflow-hidden transition-all duration-1000 ${theme.wallpaper[wallpaper % theme.wallpaper.length]}`}>
+            <FloatingParticles />
+            <VineBorder />
 
             {/* Top Bar */}
-            <div className="absolute top-0 w-full h-10 flex justify-between items-center px-6 text-gray-600 bg-white/20 backdrop-blur-md z-40 border-b border-white/20 shadow-sm">
+            <div className={`absolute top-0 w-full h-10 flex justify-between items-center px-6 text-gray-600 bg-white/20 backdrop-blur-md z-40 border-b border-white/20 shadow-sm transition-colors`}>
                 <div className="flex items-center gap-4 text-sm font-medium">
-                    <span className="font-black flex items-center gap-2 text-pink-600"><Heart fill="currentColor" size={16} /> LoveOS 3.0</span>
+                    <span className={`font-black flex items-center gap-2 ${theme.accent}`}>{theme.icon} LoveOS 3.0</span>
                 </div>
                 <div className="flex items-center gap-6 text-xs font-bold tracking-wide text-gray-500">
-                    <button onClick={() => setWallpaper((wallpaper + 1) % wallpapers.length)} className="hover:text-pink-600 transition-colors flex items-center gap-1 bg-white/30 px-3 py-1 rounded-full">
-                        <Sparkles size={12} /> Theme
+                    <button onClick={toggleTheme} className="hover:text-pink-600 transition-colors flex items-center gap-1 bg-white/30 px-3 py-1 rounded-full border border-transparent hover:border-pink-200">
+                        {theme.id === 'plant' ? '🌹' : '🌿'} Switch to {theme.id === 'plant' ? 'Love' : 'Plant'}
+                    </button>
+                    <button onClick={() => setWallpaper((wallpaper + 1) % theme.wallpaper.length)} className="hover:text-pink-600 transition-colors flex items-center gap-1 bg-white/30 px-3 py-1 rounded-full">
+                        <Sparkles size={12} /> Wallpaper
                     </button>
                     <span>100% ❤️</span>
                     <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1071,7 +1176,7 @@ const App = () => {
 
                         {/* Active Indicator */}
                         {windows.find(w => w.id === app.id) && (
-                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full mt-1 shadow-[0_0_5px_rgba(236,72,153,0.5)]"></div>
+                            <div className={`w-1.5 h-1.5 ${theme.id === 'plant' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.5)]'} rounded-full mt-1`}></div>
                         )}
                     </button>
                 ))}
@@ -1085,6 +1190,19 @@ const App = () => {
             </div>
 
         </div>
+    );
+};
+
+const App = () => {
+    const [currentTheme, setCurrentTheme] = useState(THEMES.love);
+
+    const toggleTheme = () => {
+        setCurrentTheme(prev => prev.id === 'love' ? THEMES.plant : THEMES.love);
+    };
+    return (
+        <ThemeContext.Provider value={{ theme: currentTheme, toggleTheme }}>
+            <LoveOS />
+        </ThemeContext.Provider>
     );
 };
 
