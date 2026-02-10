@@ -281,7 +281,7 @@ const CuteButton = ({ children, onClick, className = "", variant = "primary" }) 
     );
 };
 
-const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, size, onResize }) => {
+const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id, size, onResize, isMinimized }) => {
     const { theme } = useTheme();
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -348,7 +348,8 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
                 top: position.y,
                 width: size ? size.width : "20rem",
                 height: size ? size.height : "auto",
-                zIndex: isActive ? 50 : 10
+                zIndex: isActive ? 50 : 10,
+                display: isMinimized ? 'none' : 'flex'
             }}
             className={`absolute flex flex-col overflow-hidden transition-all duration-300 rounded-3xl ${theme.glass} ${isActive ? `shadow-2xl ring-4 ring-white/50` : 'opacity-90'}`}
         >
@@ -1054,37 +1055,41 @@ const LoveOS = () => {
         }
 
         if (windows.find(w => w.id === app.id)) {
+            setWindows(windows.map(w => w.id === app.id ? { ...w, isMinimized: false } : w));
             setActiveId(app.id);
         } else {
-            // Default sizes based on app type or generic default
-            let defaultWidth;
-            let defaultHeight;
+            // Dynamic Size: 75% of screen (Default)
+            let width = Math.min(window.innerWidth * 0.75, 1200); // Cap max width reasonably
+            let height = Math.min(window.innerHeight * 0.75, 800); // Cap max height
 
-            // Handle legacy width overrides from APP_DATA
-            if (app.width) {
-                // Try to parse parsing "w-[...] md:w-[...]" strings roughly or just set defaults
-                // Since we are moving to state-based size, let's just set good defaults
+            // Restore specific sizes for "compact" apps
+            if (['notes', 'chat', 'music', 'coupons', 'recycle', 'snake'].includes(app.id)) {
+                width = 400;
+                height = 500;
+                if (app.id === 'notes') { width = 320; height = 450; }
+                if (app.id === 'snake') { width = 350; height = 400; }
             }
 
-            defaultWidth = 400;
-            defaultHeight = 500;
-
-            if (app.id === 'quest') { defaultWidth = 550; defaultHeight = 600; }
-            if (app.id === 'browser') { defaultWidth = 600; defaultHeight = 500; }
-            if (app.id === 'snake') { defaultWidth = 350; defaultHeight = 400; }
-            if (app.id === 'notes') { defaultWidth = 320; defaultHeight = 450; }
+            // Center Logic
+            const x = (window.innerWidth - width) / 2;
+            const y = (window.innerHeight - height) / 2;
 
             setWindows([...windows, {
                 ...app,
                 zIndex: windows.length + 1,
-                pos: app.initialPos,
-                size: { width: defaultWidth, height: defaultHeight }
+                // Add some randomness for subsequent windows so they don't stack perfectly on top
+                pos: { x: x + (windows.length * 20), y: y + (windows.length * 20) },
+                size: { width, height }
             }]);
             setActiveId(app.id);
         }
     };
 
     const closeWindow = (id) => setWindows(windows.filter(w => w.id !== id));
+
+    const toggleMinimize = (id) => {
+        setWindows(windows.map(w => w.id === id ? { ...w, isMinimized: !w.isMinimized } : w));
+    };
 
     const updateWindowPos = (id, pos) => {
         setWindows(windows.map(w => w.id === id ? { ...w, pos } : w));
@@ -1259,7 +1264,8 @@ const LoveOS = () => {
                     isActive={activeId === win.id}
                     onFocus={() => setActiveId(win.id)}
                     onClose={() => closeWindow(win.id)}
-                    onMinimize={() => closeWindow(win.id)}
+                    onMinimize={() => toggleMinimize(win.id)}
+                    isMinimized={win.isMinimized}
                     onMove={updateWindowPos}
                     onResize={updateWindowSize}
                 >
