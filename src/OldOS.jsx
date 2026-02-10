@@ -129,14 +129,14 @@ const LoveLetterApp = () => (
         <p>I love you more than I hate bugs in production.</p>
         <br />
         <p>Forever yours,</p>
-        <p>Dev Boyfriend</p>
+        <p>Dev Boyfriend (Bubu)</p>
     </div>
 );
 
 const PhotoGalleryApp = () => {
     // REPLACE THESE URLS WITH REAL PHOTOS OF YOU TWO
     const photos = [
-        { url: "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=400&q=80", caption: "Our First Date" },
+        { url: "/photos/sample.jpg", caption: "Our First Date" },
         { url: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&q=80", caption: "That Trip We Took" },
         { url: "https://images.unsplash.com/photo-1621600411688-4be93cd68504?w=400&q=80", caption: "Goofy Times" },
         { url: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&q=80", caption: "Valentine's '25" },
@@ -636,7 +636,7 @@ const OldOS = ({ onUpdateStart }) => {
                         onMinimize={() => minimizeWindow(win.id)}
                         onMove={moveWindow}
                     >
-                        <win.component />
+                        <win.component onOpenApp={openApp} />
                     </WindowFrame>
                 )
             ))}

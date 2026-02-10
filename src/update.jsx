@@ -223,7 +223,7 @@ const NotesApp = () => (
         <div className="mt-8 flex justify-end">
             <div className="rotate-3">
                 <p className="font-bold text-pink-400 text-xl font-handwriting">Love,</p>
-                <p className="font-bold text-gray-600">Your Dev Boyfriend</p>
+                <p className="font-bold text-gray-600">Your Dev Boyfriend (Bubu)</p>
             </div>
         </div>
     </div>
@@ -500,20 +500,39 @@ const SnakeGameApp = () => {
     );
 };
 
-const BrowserApp = () => (
+const BrowserApp = ({ onOpenApp }) => (
     <div className="flex flex-col h-full bg-white/80">
         {/* Browser Bar */}
-        <div className="p-3 bg-white/80 border-b border-gray-100 flex items-center gap-3 shadow-sm z-10 backdrop-blur-md">
-            <div className="flex gap-1.5 mr-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-300"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+        <div className="p-3 bg-white/80 border-b border-gray-100 flex flex-col gap-2 shadow-sm z-10 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+                <div className="flex gap-1.5 mr-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-300"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+                </div>
+                <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-full px-4 py-1.5 text-xs text-gray-400 flex items-center gap-2 font-mono">
+                    <Unlock size={10} className="text-pink-300" />
+                    <span>lovelanguage.com/reasons-why</span>
+                </div>
+                <RefreshCw size={14} className="text-gray-400 hover:rotate-180 transition-transform duration-500 cursor-pointer" />
             </div>
-            <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-full px-4 py-1.5 text-xs text-gray-400 flex items-center gap-2 font-mono">
-                <Unlock size={10} className="text-pink-300" />
-                <span>lovelanguage.com/reasons-why</span>
+
+            {/* Bookmarks Bar */}
+            <div className="flex gap-2 text-xs text-gray-500 font-medium">
+                <button className="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1 transition-colors">
+                    <Star size={10} className="text-yellow-400 fill-yellow-400" /> Favorites
+                </button>
+                <div className="w-px h-4 bg-gray-300 my-auto"></div>
+
+                {/* Pumpkin App Bookmark */}
+                <button
+                    onClick={() => onOpenApp && onOpenApp('pumpkin')}
+                    className="hover:bg-pink-50 hover:text-pink-500 px-2 py-1 rounded flex items-center gap-1 transition-colors group"
+                >
+                    <Heart size={10} className="text-pink-300 group-hover:text-pink-500 transition-colors" />
+                    My Pumpkin
+                </button>
             </div>
-            <RefreshCw size={14} className="text-gray-400 hover:rotate-180 transition-transform duration-500 cursor-pointer" />
         </div>
 
         {/* Web Content */}
@@ -763,6 +782,16 @@ const LoveQuestApp = () => {
 
 // --- Static App Definitions ---
 
+const PumpkinApp = () => (
+    <div className="w-full h-full bg-black flex flex-col">
+        <iframe
+            src="https://my-pumpkin.netlify.app/"
+            className="w-full flex-grow border-none"
+            title="My Pumpkin"
+        />
+    </div>
+);
+
 const APP_DATA = [
     { id: 'notes', title: 'Love Note', icon: FileText, color: 'text-yellow-500', bg: 'bg-yellow-100', component: NotesApp, initialPos: { x: 50, y: 50 } },
     { id: 'gallery', title: 'Us Gallery', icon: ImageIcon, color: 'text-blue-500', bg: 'bg-blue-100', component: GalleryApp, initialPos: { x: 100, y: 80 } },
@@ -773,6 +802,7 @@ const APP_DATA = [
     { id: 'browser', title: 'Why I Love U', icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-100', component: BrowserApp, initialPos: { x: 60, y: 60 }, width: "w-[90vw] md:w-[600px]" },
     { id: 'quest', title: 'Love Quest', icon: Map, color: 'text-rose-500', bg: 'bg-rose-100', component: LoveQuestApp, initialPos: { x: 250, y: 100 }, width: "w-[90vw] md:w-[550px]" },
     { id: 'recycle', title: 'Recycle Bin', icon: Trash2, color: 'text-gray-500', bg: 'bg-gray-200', component: RecycleBinApp, initialPos: { x: 300, y: 200 } },
+    { id: 'pumpkin', title: 'My Pumpkin', icon: Heart, color: 'text-orange-500', bg: 'bg-orange-100', component: PumpkinApp, initialPos: { x: 150, y: 150 }, width: "w-[90vw] md:w-[800px]" },
     { id: 'crash', title: "Don't Click", icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-100', component: null, initialPos: { x: 600, y: 400 }, isAction: true }, // Special case for BSOD
 ];
 
@@ -1018,7 +1048,7 @@ const App = () => {
                     onMove={updateWindowPos}
                     onResize={updateWindowSize}
                 >
-                    {win.component ? <win.component /> : null}
+                    {win.component ? <win.component onOpenApp={openApp} /> : null}
                 </WindowFrame>
             ))}
 

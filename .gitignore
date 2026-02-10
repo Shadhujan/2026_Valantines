@@ -121,3 +121,6 @@ dist
 dist/
 dist-ssr/
 *.local
+
+# Public
+public/
