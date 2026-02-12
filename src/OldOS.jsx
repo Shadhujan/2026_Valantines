@@ -42,11 +42,12 @@ const Button95 = ({ children, onClick, className = "", active = false }) => (
     </button>
 );
 
-const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, position, onMove, id }) => {
+const WindowFrame = ({ title, onClose, onMinimize, onMaximize, isMaximized, children, isActive, onFocus, position, onMove, id }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
     const handleMouseDown = (e) => {
+        if (isMaximized) return; // Disable drag when maximized
         onFocus();
         setIsDragging(true);
         setDragOffset({
@@ -83,19 +84,26 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
     return (
         <div
             onMouseDown={onFocus}
-            style={{
+            style={isMaximized ? {
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: 'calc(100% - 40px)', // Subtract taskbar height
+                zIndex: isActive ? 50 : 10
+            } : {
                 left: position.x,
                 top: position.y,
                 zIndex: isActive ? 50 : 10
             }}
-            className={`absolute w-80 md:w-96 bg-gray-300 border-2 border-t-white border-l-white border-b-black border-r-black shadow-xl flex flex-col font-sans`}
+            className={`absolute ${isMaximized ? '' : 'w-80 md:w-96'} bg-gray-300 border-2 border-t-white border-l-white border-b-black border-r-black shadow-xl flex flex-col font-sans`}
         >
             {/* Title Bar */}
             <div
                 onMouseDown={handleMouseDown}
                 className={`
-          flex justify-between items-center px-1 py-0.5 cursor-move select-none
+          flex justify-between items-center px-1 py-0.5 select-none
           ${isActive ? 'bg-[#000080] text-white' : 'bg-gray-400 text-gray-200'}
+          ${isMaximized ? '' : 'cursor-move'}
         `}
             >
                 <div className="flex items-center gap-2 font-bold text-sm">
@@ -103,13 +111,15 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
                 </div>
                 <div className="flex gap-1">
                     <Button95 onClick={(e) => { e.stopPropagation(); onMinimize(); }} className="w-5 h-5 !p-0 text-xs text-black leading-none">_</Button95>
-                    <Button95 onClick={(e) => { e.stopPropagation(); /* Maximize logic usually skipped in simple OS */ }} className="w-5 h-5 !p-0 text-xs text-black leading-none">□</Button95>
+                    <Button95 onClick={(e) => { e.stopPropagation(); onMaximize(); }} className="w-5 h-5 !p-0 text-xs text-black leading-none">
+                        {isMaximized ? '❐' : '□'}
+                    </Button95>
                     <Button95 onClick={(e) => { e.stopPropagation(); onClose(); }} className="w-5 h-5 !p-0 text-xs text-black leading-none">×</Button95>
                 </div>
             </div>
 
             {/* Window Content */}
-            <div className="p-1 flex-1 overflow-auto max-h-[60vh]">
+            <div className="p-1 flex-1 overflow-auto bg-white">
                 {children}
             </div>
         </div>
@@ -119,7 +129,7 @@ const WindowFrame = ({ title, onClose, onMinimize, children, isActive, onFocus, 
 // --- Applications ---
 
 const LoveLetterApp = () => (
-    <div className="bg-white border-2 border-gray-500 inset-shadow h-64 p-4 font-mono text-sm overflow-y-auto select-text">
+    <div className="bg-white border-2 border-gray-500 inset-shadow h-full p-4 font-mono text-sm overflow-y-auto select-text">
         <p>My Dearest,</p>
         <br />
         <p>If you are reading this, it means you've successfully logged into my heart. I wanted to build something as unique as you are for Valentine's Day.</p>
@@ -201,7 +211,7 @@ const PhotoGalleryApp = () => {
     };
 
     return (
-        <div className="bg-white border-2 border-gray-500 h-64 flex flex-col font-sans select-none">
+        <div className="bg-white border-2 border-gray-500 h-full flex flex-col font-sans select-none">
             {/* Toolbar / Path Bar */}
             <div className="bg-gray-200 border-b border-gray-400 p-1 flex items-center gap-2 text-xs">
                 <Button95 onClick={handleBack} className={`w-6 h-6 flex items-center justify-center ${!currentFolder ? 'opacity-50 cursor-default' : ''}`}>
@@ -287,7 +297,7 @@ const MusicPlayerApp = () => {
             artist: "Arctic Monkeys",
             url: "/songs/I_Wanna_Be_Yours.mp3",
             duration: "03:03" // Approximate
-        },{
+        }, {
             id: 3,
             title: "3. Song 3 - Just_Way_You_Are.mp3",
             artist: "Bruno Mars",
@@ -490,7 +500,7 @@ const SnakeGame = () => {
     };
 
     return (
-        <div className="bg-gray-800 p-2 flex flex-col items-center">
+        <div className="bg-gray-800 p-2 flex flex-col items-center h-full justify-center">
             <div className="mb-2 text-green-400 font-mono flex justify-between w-full px-2">
                 <span>LOVE LEVEL: {score}</span>
                 <span>{gameOver ? "GAME OVER" : "PLAYING"}</span>
@@ -537,7 +547,7 @@ const SnakeGame = () => {
 };
 
 const WebBrowserApp = () => (
-    <div className="bg-white h-64 flex flex-col font-sans text-sm">
+    <div className="bg-white h-full flex flex-col font-sans text-sm">
         <div className="bg-gray-200 border-b border-gray-400 p-1 text-xs text-gray-600 flex gap-2">
             <span>File</span><span>Edit</span><span>View</span><span>Favorites</span><span>Help</span>
         </div>
@@ -551,11 +561,11 @@ const WebBrowserApp = () => (
                 <li>You have the cutest smile I've ever seen (v2.0 updated).</li>
                 <li>Your laugh fixes all my runtime errors.</li>
                 <li>You support me even when my code doesn't compile.</li>
-                <li>You look beautiful even in sweatpants.</li>
-                <li><span className="text-blue-600 underline cursor-pointer hover:text-red-500">Click here to see more...</span></li>
+                <li>You look even more beautiful in nighty.</li>
+                <li><span onClick={() => alert("Error 404: Too much cuteness found. System overload! 😍")} className="text-blue-600 underline cursor-pointer hover:text-red-500">Click here to see more...</span></li>
             </ul>
             <div className="mt-8 border-t border-gray-300 pt-2 text-center text-xs text-gray-500">
-                &copy; 1995-2025 My Heart Inc. All rights reserved.
+                &copy; 1995-2026     My Heart Inc. All rights reserved.
             </div>
         </div>
     </div>
@@ -645,6 +655,10 @@ const OldOS = ({ onUpdateStart }) => {
     const minimizeWindow = (id) => {
         setWindows(windows.map(w => w.id === id ? { ...w, minimized: true } : w));
         setActiveWindowId(null);
+    };
+
+    const toggleMaximize = (id) => {
+        setWindows(windows.map(w => w.id === id ? { ...w, maximized: !w.maximized } : w));
     };
 
     const moveWindow = (id, newPos) => {
@@ -851,9 +865,11 @@ const OldOS = ({ onUpdateStart }) => {
                         title={win.title}
                         position={win.pos}
                         isActive={activeWindowId === win.id}
+                        isMaximized={win.maximized}
                         onFocus={() => setActiveWindowId(win.id)}
                         onClose={() => closeWindow(win.id)}
                         onMinimize={() => minimizeWindow(win.id)}
+                        onMaximize={() => toggleMaximize(win.id)}
                         onMove={moveWindow}
                     >
                         <win.component onOpenApp={openApp} />
