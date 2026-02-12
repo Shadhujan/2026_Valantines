@@ -438,53 +438,195 @@ const RecycleBinApp = () => {
 const GalleryApp = () => {
     const { theme } = useTheme();
     const [photos, setPhotos] = useState([]);
+    const [view, setView] = useState('albums'); // albums, grid
+    const [currentAlbum, setCurrentAlbum] = useState(null);
+    const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null); // null = no lightbox
     const [loading, setLoading] = useState(true);
 
+    // Load and Categorize Photos
     useEffect(() => {
         const loadPhotos = async () => {
             const photoModules = import.meta.glob('./assets/photos/*.{png,jpg,jpeg,svg}', { eager: true });
+            const allPhotos = Object.entries(photoModules).map(([path, module]) => {
+                const fileName = path.split('/').pop().split('.').slice(0, -1).join('.');
+                return { url: module.default, caption: fileName };
+            });
 
-            // Keywords that belong in New OS
-            const NEW_OS_KEYWORDS = ['Best', 'Fav', 'Highlight', 'Date'];
-
-            const loaded = Object.entries(photoModules)
-                .map(([path, module]) => {
-                    const fileName = path.split('/').pop().split('.').slice(0, -1).join('.');
-                    return {
-                        url: module.default,
-                        caption: fileName
-                    };
-                })
-                .filter(photo => NEW_OS_KEYWORDS.some(k => photo.caption.toLowerCase().includes(k.toLowerCase())));
-
-            setPhotos(loaded);
+            // Keep all valid photos for categorization
+            setPhotos(allPhotos);
             setLoading(false);
         };
         loadPhotos();
     }, []);
 
+    // Album Definitions
+    const getAlbums = () => {
+        const albums = [
+            { id: 'all', title: 'All Memories', icon: '📸', filter: () => true, color: 'bg-blue-100' },
+            { id: 'beach', title: 'Beach Days', icon: '🏖️', filter: p => p.caption.toLowerCase().includes('beach'), color: 'bg-cyan-100' },
+            { id: 'city', title: 'City & Mall', icon: '🏙️', filter: p => p.caption.toLowerCase().includes('mall'), color: 'bg-gray-100' },
+            { id: 'nature', title: 'Park & Nature', icon: '🌳', filter: p => p.caption.toLowerCase().match(/park|rainy/i), color: 'bg-green-100' },
+            { id: 'adventure', title: 'Adventures', icon: '🛤️', filter: p => p.caption.toLowerCase().match(/kandy|boat|bus|trip/i), color: 'bg-orange-100' },
+            { id: 'milestones', title: 'Milestones', icon: '🎓', filter: p => p.caption.toLowerCase().match(/interview|viva|sliit/i), color: 'bg-purple-100' },
+            { id: 'silly', title: 'Silly Moments', icon: '🤪', filter: p => p.caption.toLowerCase().match(/goofy|fun/i), color: 'bg-yellow-100' },
+            { id: 'dates', title: 'Romantic Dates', icon: '💑', filter: p => p.caption.toLowerCase().match(/first date|cafe|kovil/i), color: 'bg-rose-100' },
+            { id: 'cozy', title: 'Cozy & Cute', icon: '🧥', filter: p => p.caption.toLowerCase().match(/hoodie|hoodi|cutie/i), color: 'bg-indigo-100' },
+            { id: 'best', title: 'Highlights', icon: '✨', filter: p => p.caption.toLowerCase().match(/best|fav|highlight/i), color: 'bg-amber-100' }
+        ];
+        // Only return albums that have photos
+        return albums.map(a => ({
+            ...a,
+            photos: photos.filter(a.filter),
+            cover: photos.filter(a.filter)[0]?.url
+        })).filter(a => a.photos.length > 0);
+    };
+
+    const albums = getAlbums();
+    const currentPhotos = currentAlbum ? albums.find(a => a.id === currentAlbum)?.photos || [] : [];
+
+    // Lightbox Navigation
+    const nextPhoto = (e) => {
+        e.stopPropagation();
+        setSelectedPhotoIndex(prev => (prev + 1) % currentPhotos.length);
+    };
+
+    const prevPhoto = (e) => {
+        e.stopPropagation();
+        setSelectedPhotoIndex(prev => (prev - 1 + currentPhotos.length) % currentPhotos.length);
+    };
+
+    const handleKeyDown = (e) => {
+        if (selectedPhotoIndex === null) return;
+        if (e.key === 'ArrowRight') nextPhoto(e);
+        if (e.key === 'ArrowLeft') prevPhoto(e);
+        if (e.key === 'Escape') setSelectedPhotoIndex(null);
+    };
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedPhotoIndex, currentPhotos]);
+
+    if (loading) return <div className="h-full flex items-center justify-center text-gray-400">Loading Memories...</div>;
+
     return (
-        <div className="p-4 grid grid-cols-2 gap-4 h-full content-start overflow-y-auto">
-            {loading ? (
-                <div className="col-span-2 text-center text-gray-400 py-10">Loading memories...</div>
-            ) : photos.length === 0 ? (
-                <div className="col-span-2 text-center text-gray-400 py-10 px-4">
-                    <p>No highlights found yet.</p>
-                    <p className="text-xs mt-2">Rename photos with 'Best', 'Fav', or 'Date' to see them here!</p>
-                </div>
-            ) : (
-                photos.map((p, i) => (
-                    <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white p-1 hover:-rotate-1 hover:scale-105 z-0 hover:z-10">
-                        <div className={`w-full h-full rounded-xl overflow-hidden`}>
-                            <img src={p.url} alt={p.caption} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                        </div>
-                        <div className="absolute inset-x-2 bottom-2 bg-white/90 backdrop-blur-sm rounded-lg py-2 flex items-center justify-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 shadow-lg">
-                            <span className="text-gray-600 text-xs font-bold">
-                                {p.caption}
-                            </span>
+        <div className="h-full flex flex-col bg-gray-50/50">
+            {/* Header / Breadcrumbs */}
+            <div className={`p-4 border-b border-gray-200 flex items-center gap-2 ${theme.windowTitleBar}`}>
+                {view === 'grid' && (
+                    <button onClick={() => { setView('albums'); setCurrentAlbum(null); }} className="hover:bg-black/5 p-1 rounded-full transition-colors mr-2">
+                        <SkipBack size={16} className="text-gray-600" />
+                    </button>
+                )}
+                <h2 className="font-bold text-gray-700 text-lg">
+                    {view === 'albums' ? 'My Collections' : albums.find(a => a.id === currentAlbum)?.title}
+                </h2>
+                <span className="text-xs text-gray-400 font-mono ml-auto">
+                    {view === 'albums' ? `${albums.length} Albums` : `${currentPhotos.length} Memories`}
+                </span>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-4">
+
+                {/* ALBUMS VIEW (Blurred Cards) */}
+                {view === 'albums' && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {albums.map(album => (
+                            <div
+                                key={album.id}
+                                onClick={() => { setCurrentAlbum(album.id); setView('grid'); }}
+                                className="group cursor-pointer relative aspect-video rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
+                            >
+                                {/* Blurred Background Image */}
+                                {album.cover ? (
+                                    <div className="absolute inset-0">
+                                        <img src={album.cover} alt="" className="w-full h-full object-cover blur-md scale-110 opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                                    </div>
+                                ) : (
+                                    <div className={`absolute inset-0 ${album.color} opacity-50`}></div>
+                                )}
+
+                                {/* Glass Card Content */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/30 backdrop-blur-sm p-4 group-hover:bg-white/10 transition-colors">
+                                    <div className={`w-12 h-12 rounded-full ${album.color} flex items-center justify-center text-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform`}>
+                                        {album.icon}
+                                    </div>
+                                    <h3 className="font-bold text-gray-800 text-lg shadow-black/5 drop-shadow-sm text-center leading-tight">{album.title}</h3>
+                                    <span className="text-xs font-medium text-gray-700 uppercase tracking-widest mt-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        {album.photos.length} Photos
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* PHOTOS GRID VIEW (Polaroid Style) */}
+                {view === 'grid' && (
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-10">
+                        {currentPhotos.map((p, i) => (
+                            <div
+                                key={i}
+                                onClick={() => setSelectedPhotoIndex(i)}
+                                className={`group relative aspect-[4/5] rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer bg-white p-2 transform ${i % 2 === 0 ? 'hover:-rotate-2' : 'hover:rotate-2'} hover:scale-105 hover:z-10`}
+                            >
+                                <div className={`w-full h-[75%] rounded-md overflow-hidden bg-gray-100`}>
+                                    <img
+                                        src={p.url}
+                                        alt={p.caption}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                                <div className="h-[25%] flex items-center justify-center">
+                                    <span className="font-handwriting text-gray-600 text-[10px] md:text-xs font-bold leading-tight text-center px-1 line-clamp-2">
+                                        {p.caption}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* LIGHTBOX VIEWER (Mac Style) */}
+            {selectedPhotoIndex !== null && (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center animate-[fadeIn_0.2s_ease-out]" onClick={() => setSelectedPhotoIndex(null)}>
+
+                    {/* Toolbar */}
+                    <div className="absolute top-4 right-4 flex gap-4">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(null); }} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <button onClick={prevPhoto} className="absolute left-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
+                        <SkipBack size={24} />
+                    </button>
+                    <button onClick={nextPhoto} className="absolute right-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
+                        <SkipForward size={24} />
+                    </button>
+
+                    {/* Main Image */}
+                    <div className="max-w-[90vw] max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
+                        <img
+                            src={currentPhotos[selectedPhotoIndex].url}
+                            alt="Full view"
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                        />
+                        <div className="absolute -bottom-10 left-0 w-full text-center">
+                            <p className="text-white/90 font-medium text-lg font-serif tracking-wide">
+                                {currentPhotos[selectedPhotoIndex].caption}
+                            </p>
+                            <p className="text-white/40 text-xs uppercase tracking-widest mt-1">
+                                {selectedPhotoIndex + 1} of {currentPhotos.length}
+                            </p>
                         </div>
                     </div>
-                ))
+                </div>
             )}
         </div>
     );
