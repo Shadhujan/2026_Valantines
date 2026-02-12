@@ -17,6 +17,7 @@ import {
     Pause,
     SkipForward,
     SkipBack,
+    ArrowLeft,
     Send,
     Coffee,
     Cpu,
@@ -596,17 +597,28 @@ const GalleryApp = () => {
                 <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center animate-[fadeIn_0.2s_ease-out]" onClick={() => setSelectedPhotoIndex(null)}>
 
                     {/* Toolbar */}
-                    <div className="absolute top-4 right-4 flex gap-4">
+                    {/* Toolbar */}
+                    <div className="absolute top-4 left-4 z-50">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(null); }}
+                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full transition-all hover:scale-105"
+                        >
+                            <ArrowLeft size={18} />
+                            <span className="font-medium text-sm">Back to Gallery</span>
+                        </button>
+                    </div>
+
+                    <div className="absolute top-4 right-4 z-50">
                         <button onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(null); }} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
                             <X size={20} />
                         </button>
                     </div>
 
                     {/* Navigation Buttons */}
-                    <button onClick={prevPhoto} className="absolute left-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
+                    <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
                         <SkipBack size={24} />
                     </button>
-                    <button onClick={nextPhoto} className="absolute right-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
+                    <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-110">
                         <SkipForward size={24} />
                     </button>
 
