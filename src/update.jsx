@@ -460,32 +460,146 @@ const MusicApp = () => {
     const { theme } = useTheme();
     const bgGradient = theme.id === 'plant' ? 'from-teal-400/90 to-emerald-400/90' : 'from-indigo-400/90 to-purple-400/90';
 
+    // Sample songs
+    const songs = [
+        {
+            id: 1,
+            title: "Song 1 - Sample",
+            artist: "SoundHelix",
+            url: "/songs/sample1.mp3",
+            duration: "03:12"
+        },
+        {
+            id: 2,
+            title: "Song 2 - Sample",
+            artist: "SoundHelix",
+            url: "/songs/sample2.mp3",
+            duration: "04:05"
+        }
+    ];
+
+    const [currentSongIndex, setCurrentSongIndex] = useState(0);
+    const [playing, setPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+
+    // Lazy initialization of Audio
+    const audioRef = useRef(null);
+    if (audioRef.current === null) {
+        audioRef.current = new Audio(songs[0].url);
+    }
+
+    useEffect(() => {
+        if (audioRef.current) {
+            const newUrl = songs[currentSongIndex].url;
+            if (!audioRef.current.src.endsWith(newUrl)) {
+                audioRef.current.src = newUrl;
+                audioRef.current.load();
+                if (playing) {
+                    audioRef.current.play().catch(e => console.error("Playback failed:", e));
+                }
+            }
+        }
+    }, [currentSongIndex]);
+
+    useEffect(() => {
+        if (audioRef.current) {
+            if (playing) {
+                audioRef.current.play().catch(e => {
+                    console.error("Playback failed:", e);
+                    setPlaying(false);
+                });
+            } else {
+                audioRef.current.pause();
+            }
+        }
+    }, [playing]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const interval = setInterval(() => {
+            if (playing) {
+                const duration = audio.duration || 100;
+                setProgress((audio.currentTime / duration) * 100);
+            }
+        }, 500);
+
+        const handleEnded = () => handleNext();
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            clearInterval(interval);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, [playing]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                // Do NOT set to null
+            }
+        };
+    }, []);
+
+    const handleNext = () => {
+        setCurrentSongIndex((prev) => (prev + 1) % songs.length);
+        setPlaying(true);
+    };
+
+    const handlePrev = () => {
+        setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length);
+        setPlaying(true);
+    };
+
+    const togglePlay = () => {
+        setPlaying(!playing);
+    };
+
+    const currentSong = songs[currentSongIndex];
+
+    const formatTime = (seconds) => {
+        if (!seconds) return "0:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
+
     return (
         <div className={`bg-gradient-to-br ${bgGradient} p-6 text-white h-full flex flex-col items-center justify-center relative overflow-hidden`}>
 
-            <div className="w-40 h-40 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] mb-8 bg-white/20 backdrop-blur-md flex items-center justify-center animate-[spin_8s_linear_infinite]">
+            <div className={`w-40 h-40 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] mb-8 bg-white/20 backdrop-blur-md flex items-center justify-center ${playing ? 'animate-[spin_8s_linear_infinite]' : ''}`}>
                 <Music size={56} className="text-white" />
             </div>
 
             <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold tracking-tight">Perfect</h3>
-                <p className="text-white/80 text-sm font-medium tracking-widest uppercase mt-1">Ed Sheeran</p>
+                <h3 className="text-2xl font-bold tracking-tight">{currentSong.title}</h3>
+                <p className="text-white/80 text-sm font-medium tracking-widest uppercase mt-1">{currentSong.artist}</p>
             </div>
 
-            <div className="w-full bg-white/20 rounded-full h-1.5 mb-2 overflow-hidden">
-                <div className="h-full w-1/3 bg-white rounded-full shadow-[0_0_10px_white]"></div>
+            <div className="w-full bg-white/20 rounded-full h-1.5 mb-2 overflow-hidden cursor-pointer" onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                if (audioRef.current) {
+                    audioRef.current.currentTime = percent * audioRef.current.duration;
+                    setProgress(percent * 100);
+                }
+            }}>
+                <div style={{ width: `${progress}%` }} className="h-full bg-white rounded-full shadow-[0_0_10px_white]"></div>
             </div>
             <div className="flex justify-between w-full text-[10px] font-bold text-white/60 mb-8 uppercase tracking-wider">
-                <span>1:12</span>
-                <span>4:23</span>
+                <span>{audioRef.current ? formatTime(audioRef.current.currentTime) : "0:00"}</span>
+                <span>{audioRef.current ? formatTime(audioRef.current.duration) : "0:00"}</span>
             </div>
 
             <div className="flex items-center gap-8">
-                <button className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipBack fill="currentColor" size={24} /></button>
-                <button className={`w-16 h-16 bg-white ${theme.id === 'plant' ? 'text-emerald-500' : 'text-purple-500'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all active:scale-95`}>
-                    <Play fill="currentColor" className="ml-1" size={28} />
+                <button onClick={handlePrev} className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipBack fill="currentColor" size={24} /></button>
+                <button onClick={togglePlay} className={`w-16 h-16 bg-white ${theme.id === 'plant' ? 'text-emerald-500' : 'text-purple-500'} rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:shadow-xl transition-all active:scale-95`}>
+                    {playing ? <Pause fill="currentColor" className="ml-1" size={28} /> : <Play fill="currentColor" className="ml-1" size={28} />}
                 </button>
-                <button className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipForward fill="currentColor" size={24} /></button>
+                <button onClick={handleNext} className={`hover:${theme.id === 'plant' ? 'text-emerald-200' : 'text-pink-200'} transition-colors transform hover:scale-110`}><SkipForward fill="currentColor" size={24} /></button>
             </div>
         </div>
     );

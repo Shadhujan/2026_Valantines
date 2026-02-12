@@ -158,40 +158,149 @@ const PhotoGalleryApp = () => {
     );
 };
 
+// Helper for formatting time
+const formatTime = (seconds) => {
+    if (!seconds) return "00:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+};
+
 const MusicPlayerApp = () => {
+    // Sample songs
+    const songs = [
+        {
+            id: 1,
+            title: "1. Song 1 - Sample.mp3",
+            artist: "SoundHelix",
+            url: "/songs/sample1.mp3",
+            duration: "03:12" // Approximate
+        },
+        {
+            id: 2,
+            title: "2. Song 2 - Sample.mp3",
+            artist: "SoundHelix",
+            url: "/songs/sample2.mp3",
+            duration: "04:05" // Approximate
+        }
+    ];
+
+    const [currentSongIndex, setCurrentSongIndex] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
 
+    // Lazy initialization of Audio to avoid creating it on every render
+    const audioRef = useRef(null);
+    if (audioRef.current === null) {
+        audioRef.current = new Audio(songs[0].url);
+    }
+
     useEffect(() => {
-        let interval;
-        if (playing) {
-            interval = setInterval(() => {
-                setProgress(p => (p >= 100 ? 0 : p + 1));
-            }, 100);
+        // Update audio source when song changes
+        if (audioRef.current) {
+            // Only update if src is different to avoid reloading on initial render if logic overlaps
+            const newUrl = songs[currentSongIndex].url;
+            if (!audioRef.current.src.endsWith(newUrl)) {
+                audioRef.current.src = newUrl;
+                audioRef.current.load();
+                if (playing) {
+                    audioRef.current.play().catch(e => console.error("Playback failed:", e));
+                }
+            }
         }
-        return () => clearInterval(interval);
+    }, [currentSongIndex]);
+
+    useEffect(() => {
+        // Handle play/pause
+        if (audioRef.current) {
+            if (playing) {
+                audioRef.current.play().catch(e => {
+                    console.error("Playback failed:", e);
+                    setPlaying(false);
+                });
+            } else {
+                audioRef.current.pause();
+            }
+        }
     }, [playing]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        // Progress interval
+        const interval = setInterval(() => {
+            if (playing) {
+                const duration = audio.duration || 100; // Avoid NaN
+                setProgress((audio.currentTime / duration) * 100);
+            }
+        }, 500);
+
+        // Auto next song
+        const handleEnded = () => handleNext();
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            clearInterval(interval);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, [playing]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                // Do NOT set to null here to avoid conflicts with other cleanups
+            }
+        };
+    }, []);
+
+    const handleNext = () => {
+        setCurrentSongIndex((prev) => (prev + 1) % songs.length);
+        setPlaying(true);
+    };
+
+    const handlePrev = () => {
+        setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length);
+        setPlaying(true);
+    };
+
+    const togglePlay = () => {
+        setPlaying(!playing);
+    };
+
+    const currentSong = songs[currentSongIndex];
 
     return (
         <div className="bg-gray-300 p-2 select-none">
             <div className="bg-black border-2 border-gray-500 p-2 mb-2">
                 <div className="text-green-500 font-mono text-xs mb-1">WINAMP 1.0</div>
                 <div className="text-green-400 font-mono text-sm scrolling-text truncate">
-                    1. Ed Sheeran - Perfect.mp3 (128kbps)
+                    {currentSong.title}
                 </div>
                 <div className="flex items-center gap-1 mt-2">
-                    <span className="text-green-500 text-xs">02:34</span>
-                    <div className="h-2 flex-1 bg-gray-800 relative">
+                    <span className="text-green-500 text-xs">
+                        {audioRef.current ? formatTime(audioRef.current.currentTime) : "00:00"}
+                    </span>
+                    <div className="h-2 flex-1 bg-gray-800 relative cursor-pointer" onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const percent = (e.clientX - rect.left) / rect.width;
+                        if (audioRef.current) {
+                            audioRef.current.currentTime = percent * audioRef.current.duration;
+                            setProgress(percent * 100);
+                        }
+                    }}>
                         <div style={{ width: `${progress}%` }} className="h-full bg-green-500/50"></div>
                     </div>
                 </div>
             </div>
             <div className="flex justify-between">
-                <Button95 onClick={() => setProgress(0)}><SkipBack size={14} /></Button95>
-                <Button95 onClick={() => setPlaying(!playing)}>
+                <Button95 onClick={handlePrev}><SkipBack size={14} /></Button95>
+                <Button95 onClick={togglePlay}>
                     {playing ? <Square size={14} fill="black" /> : <Play size={14} fill="black" />}
                 </Button95>
-                <Button95 onClick={() => setProgress(100)}><SkipForward size={14} /></Button95>
+                <Button95 onClick={handleNext}><SkipForward size={14} /></Button95>
             </div>
         </div>
     );
@@ -371,7 +480,7 @@ const OldOS = ({ onUpdateStart }) => {
         music: { id: 'music', title: 'WinAmp Player', icon: Music, component: MusicPlayerApp, initialPos: { x: 200, y: 150 } },
         snake: { id: 'snake', title: 'Heart Snake', icon: Cpu, component: SnakeGame, initialPos: { x: 300, y: 100 } },
         browser: { id: 'browser', title: 'Internet Explorer', icon: Globe, component: WebBrowserApp, initialPos: { x: 60, y: 60 } },
-        trash: { id: 'trash', title: 'Recycle Bin', icon: Trash2, component: () => <div className="p-4 text-center">My heart is full, no space for trash!</div>, initialPos: { x: 150, y: 150 } },
+        trash: { id: 'trash', title: 'Recycle Bin', icon: Trash2, component: () => <div className="p-4 text-center">My heart is full of your memories, no space for trash!</div>, initialPos: { x: 150, y: 150 } },
     };
 
     useEffect(() => {
@@ -534,7 +643,7 @@ const OldOS = ({ onUpdateStart }) => {
                             <p className="text-sm">Type a password to log on to My Heart.</p>
                             <div className="flex gap-2 items-center">
                                 <span className="text-xs font-bold w-20">User name:</span>
-                                <input type="text" value="Girlfriend" disabled className="border-2 border-gray-500 px-1 bg-white outline-none text-sm" />
+                                <input type="text" value="JooJoo" disabled className="border-2 border-gray-500 px-1 bg-white outline-none text-sm" />
                             </div>
                             <div className="flex gap-2 items-center">
                                 <span className="text-xs font-bold w-20">Password:</span>
