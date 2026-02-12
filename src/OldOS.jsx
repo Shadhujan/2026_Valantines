@@ -134,25 +134,123 @@ const LoveLetterApp = () => (
 );
 
 const PhotoGalleryApp = () => {
-    // REPLACE THESE URLS WITH REAL PHOTOS OF YOU TWO
-    const photos = [
-        { url: "/photos/sample.jpg", caption: "Our First Date" },
-        { url: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&q=80", caption: "That Trip We Took" },
-        { url: "https://images.unsplash.com/photo-1621600411688-4be93cd68504?w=400&q=80", caption: "Goofy Times" },
-        { url: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&q=80", caption: "Valentine's '25" },
+    // Categories configuration
+    const CATEGORIES = [
+        { id: 'beach', name: 'Beach Days', icon: '🏖️', keywords: ['Beach'] },
+        { id: 'city', name: 'City & Mall', icon: '🏙️', keywords: ['Mall'] },
+        { id: 'nature', name: 'Park & Nature', icon: '🌳', keywords: ['Park', 'Rainy'] },
+        { id: 'adventure', name: 'Adventures', icon: '🛤️', keywords: ['Kandy', 'Boat', 'Bus', 'Trip'] },
+        { id: 'milestones', name: 'Milestones', icon: '🎓', keywords: ['Interview', 'Viva', 'Sliit'] },
+        { id: 'silly', name: 'Silly Moments', icon: '🤪', keywords: ['Goofy', 'Fun'] },
+        { id: 'dates', name: 'Romantic Dates', icon: '💑', keywords: ['First Date', 'Cafe', 'Kovil'] },
+        { id: 'cozy', name: 'Cozy & Cute', icon: '🧥', keywords: ['Hoodie', 'Hoodi', 'Cutie'] },
+        { id: 'other', name: 'Other Memories', icon: '📂', keywords: [] } // Fallback
     ];
 
+    const [photos, setPhotos] = useState([]);
+    const [currentFolder, setCurrentFolder] = useState(null); // null means root view (folders)
+    const [categorizedPhotos, setCategorizedPhotos] = useState({});
+
+    useEffect(() => {
+        const photoModules = import.meta.glob('./assets/photos/*.{png,jpg,jpeg,svg}', { eager: true });
+
+        const allPhotos = Object.entries(photoModules).map(([path, module]) => {
+            const fileName = path.split('/').pop().split('.').slice(0, -1).join('.');
+            return {
+                url: module.default,
+                caption: fileName
+            };
+        });
+
+        // Categorize photos
+        const grouped = {};
+        CATEGORIES.forEach(cat => grouped[cat.id] = []);
+
+        allPhotos.forEach(photo => {
+            let placed = false;
+            for (const cat of CATEGORIES) {
+                if (cat.id === 'other') continue;
+                if (cat.keywords.some(k => photo.caption.toLowerCase().includes(k.toLowerCase()))) {
+                    grouped[cat.id].push(photo);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                grouped['other'].push(photo);
+            }
+        });
+
+        setPhotos(allPhotos); // Keep full list if needed
+        setCategorizedPhotos(grouped);
+    }, []);
+
+    const handleFolderClick = (categoryId) => {
+        setCurrentFolder(categoryId);
+    };
+
+    const handleBack = () => {
+        setCurrentFolder(null);
+    };
+
     return (
-        <div className="bg-white p-2 border-2 border-gray-500 h-64 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-2">
-                {photos.map((photo, i) => (
-                    <div key={i} className="flex flex-col items-center">
-                        <div className="border-2 border-gray-200 p-1 bg-gray-100 hover:bg-blue-100 cursor-pointer">
-                            <img src={photo.url} alt={photo.caption} className="w-full h-24 object-cover" />
-                        </div>
-                        <span className="text-xs mt-1 text-center font-sans">{photo.caption}</span>
+        <div className="bg-white border-2 border-gray-500 h-64 flex flex-col font-sans select-none">
+            {/* Toolbar / Path Bar */}
+            <div className="bg-gray-200 border-b border-gray-400 p-1 flex items-center gap-2 text-xs">
+                <Button95 onClick={handleBack} className={`w-6 h-6 flex items-center justify-center ${!currentFolder ? 'opacity-50 cursor-default' : ''}`}>
+                    <SkipBack size={12} className="transform rotate-90" /> {/* Simulating Up Arrow */}
+                </Button95>
+                <div className="bg-white border border-gray-500 px-2 py-0.5 flex-1 flex items-center gap-1">
+                    <img src="https://img.icons8.com/color/48/opened-folder.png" className="w-4 h-4" alt="folder" />
+                    <span>C:\My Documents\Our Memories{currentFolder ? `\\${CATEGORIES.find(c => c.id === currentFolder)?.name}` : ''}</span>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-2 bg-white">
+                {!currentFolder ? (
+                    // Folders View
+                    <div className="grid grid-cols-3 gap-4">
+                        {CATEGORIES.map(cat => (
+                            categorizedPhotos[cat.id]?.length > 0 && (
+                                <div
+                                    key={cat.id}
+                                    onDoubleClick={() => handleFolderClick(cat.id)}
+                                    className="flex flex-col items-center gap-1 group cursor-pointer p-1 hover:bg-blue-100 hover:outline-dotted hover:outline-1 outline-blue-500"
+                                >
+                                    <div className="text-4xl filter drop-shadow-md">{cat.icon}</div>
+                                    <span className="text-xs text-center truncate w-full px-1">{cat.name}</span>
+                                </div>
+                            )
+                        ))}
                     </div>
-                ))}
+                ) : (
+                    // Photos View
+                    <div className="grid grid-cols-2 gap-2">
+                        {categorizedPhotos[currentFolder].map((photo, i) => (
+                            <div key={i} className="flex flex-col items-center group">
+                                <div className="border-2 border-transparent group-hover:border-blue-500 p-1">
+                                    <div className="border-2 border-gray-200 p-1 bg-gray-100 cursor-pointer">
+                                        <img src={photo.url} alt={photo.caption} className="w-full h-24 object-cover" />
+                                    </div>
+                                </div>
+                                <span className="text-xs mt-1 text-center font-sans bg-white group-hover:bg-blue-600 group-hover:text-white px-1">
+                                    {photo.caption}
+                                </span>
+                            </div>
+                        ))}
+                        {categorizedPhotos[currentFolder].length === 0 && (
+                            <div className="col-span-2 text-center text-gray-400 text-xs mt-10">
+                                This folder is empty... for now! ❤️
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Status Bar */}
+            <div className="bg-gray-200 border-t border-gray-400 p-0.5 px-2 text-xs flex gap-4 text-gray-600">
+                <span>{currentFolder ? `${categorizedPhotos[currentFolder].length} object(s)` : `${Object.values(categorizedPhotos).flat().length} object(s)`}</span>
             </div>
         </div>
     );
