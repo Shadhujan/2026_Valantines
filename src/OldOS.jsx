@@ -166,7 +166,14 @@ const PhotoGalleryApp = () => {
         const grouped = {};
         CATEGORIES.forEach(cat => grouped[cat.id] = []);
 
+        const EXCLUDED_KEYWORDS = ['Best', 'Fav', 'Highlight', 'Quest', 'Secret'];
+
         allPhotos.forEach(photo => {
+            // Skip excluded photos
+            if (EXCLUDED_KEYWORDS.some(k => photo.caption.toLowerCase().includes(k.toLowerCase()))) {
+                return;
+            }
+
             let placed = false;
             for (const cat of CATEGORIES) {
                 if (cat.id === 'other') continue;
@@ -269,17 +276,23 @@ const MusicPlayerApp = () => {
     const songs = [
         {
             id: 1,
-            title: "1. Song 1 - Sample.mp3",
-            artist: "SoundHelix",
-            url: "/songs/sample1.mp3",
-            duration: "03:12" // Approximate
+            title: "1. Song 1 - Die_With_A_Smile.mp3",
+            artist: "Bruno Mars",
+            url: "/songs/Die_With_A_Smile.mp3",
+            duration: "04:11" // Approximate
         },
         {
             id: 2,
-            title: "2. Song 2 - Sample.mp3",
-            artist: "SoundHelix",
-            url: "/songs/sample2.mp3",
-            duration: "04:05" // Approximate
+            title: "2. Song 2 - I_Wanna_Be_Yours.mp3",
+            artist: "Arctic Monkeys",
+            url: "/songs/I_Wanna_Be_Yours.mp3",
+            duration: "03:03" // Approximate
+        },{
+            id: 3,
+            title: "3. Song 3 - Just_Way_You_Are.mp3",
+            artist: "Bruno Mars",
+            url: "/songs/Just_Way_You_Are.mp3",
+            duration: "03:39" // Approximate
         }
     ];
 

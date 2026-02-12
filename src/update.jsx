@@ -31,6 +31,15 @@ import {
     ArrowRight
 } from 'lucide-react';
 
+// --- Assets ---
+import imgHoodie from './assets/photos/Her_In_Hoodi.jpg';
+import imgBoat from './assets/photos/Boat Date.jpg';
+import imgKovil from './assets/photos/kovil date.jpg';
+import imgFun from './assets/photos/fun date.jpg';
+import imgBeach from './assets/photos/Beach Date.jpg';
+import imgCafe from './assets/photos/Cafe Date.jpg';
+import imgUsGoofy from './assets/photos/us goofy.jpg';
+
 /* --- LOVE OS v3.0 (CUTE EDITION) --- 
    Features: Draggable Icons + Floating Hearts + Soft Aesthetic
 */
@@ -428,35 +437,60 @@ const RecycleBinApp = () => {
 
 const GalleryApp = () => {
     const { theme } = useTheme();
-    const photos = [
-        { color: theme.id === 'plant' ? "bg-emerald-200" : "bg-rose-200", caption: "First Date 🍝" },
-        { color: theme.id === 'plant' ? "bg-teal-200" : "bg-blue-200", caption: "Beach Day 🌊" },
-        { color: theme.id === 'plant' ? "bg-green-200" : "bg-purple-200", caption: "Hiking 🌲" },
-        { color: theme.id === 'plant' ? "bg-lime-200" : "bg-yellow-200", caption: "Just Us ❤️" },
-    ];
+    const [photos, setPhotos] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadPhotos = async () => {
+            const photoModules = import.meta.glob('./assets/photos/*.{png,jpg,jpeg,svg}', { eager: true });
+
+            // Keywords that belong in New OS
+            const NEW_OS_KEYWORDS = ['Best', 'Fav', 'Highlight', 'Date'];
+
+            const loaded = Object.entries(photoModules)
+                .map(([path, module]) => {
+                    const fileName = path.split('/').pop().split('.').slice(0, -1).join('.');
+                    return {
+                        url: module.default,
+                        caption: fileName
+                    };
+                })
+                .filter(photo => NEW_OS_KEYWORDS.some(k => photo.caption.toLowerCase().includes(k.toLowerCase())));
+
+            setPhotos(loaded);
+            setLoading(false);
+        };
+        loadPhotos();
+    }, []);
 
     return (
-        <div className="p-4 grid grid-cols-2 gap-4 h-full">
-            {photos.map((p, i) => (
-                <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white p-2 hover:-rotate-2 hover:scale-105 z-0 hover:z-10">
-                    <div className={`w-full h-full rounded-xl ${p.color} opacity-80 group-hover:opacity-100 transition-opacity`}>
-                        {/* Replace with <img src="..." className="w-full h-full object-cover rounded-xl" /> */}
-                        <div className="w-full h-full flex items-center justify-center text-white/50">
-                            <ImageIcon />
+        <div className="p-4 grid grid-cols-2 gap-4 h-full content-start overflow-y-auto">
+            {loading ? (
+                <div className="col-span-2 text-center text-gray-400 py-10">Loading memories...</div>
+            ) : photos.length === 0 ? (
+                <div className="col-span-2 text-center text-gray-400 py-10 px-4">
+                    <p>No highlights found yet.</p>
+                    <p className="text-xs mt-2">Rename photos with 'Best', 'Fav', or 'Date' to see them here!</p>
+                </div>
+            ) : (
+                photos.map((p, i) => (
+                    <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white p-1 hover:-rotate-1 hover:scale-105 z-0 hover:z-10">
+                        <div className={`w-full h-full rounded-xl overflow-hidden`}>
+                            <img src={p.url} alt={p.caption} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        </div>
+                        <div className="absolute inset-x-2 bottom-2 bg-white/90 backdrop-blur-sm rounded-lg py-2 flex items-center justify-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 shadow-lg">
+                            <span className="text-gray-600 text-xs font-bold">
+                                {p.caption}
+                            </span>
                         </div>
                     </div>
-                    <div className="absolute inset-x-2 bottom-2 bg-white/90 backdrop-blur-sm rounded-lg py-2 flex items-center justify-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <span className="text-gray-600 text-xs font-bold">
-                            {p.caption}
-                        </span>
-                    </div>
-                </div>
-            ))}
+                ))
+            )}
         </div>
     );
 };
 
-const MusicApp = () => {
+const MusicApp = ({ params }) => {
     const { theme } = useTheme();
     const bgGradient = theme.id === 'plant' ? 'from-teal-400/90 to-emerald-400/90' : 'from-indigo-400/90 to-purple-400/90';
 
@@ -464,23 +498,41 @@ const MusicApp = () => {
     const songs = [
         {
             id: 1,
-            title: "Song 1 - Sample",
-            artist: "SoundHelix",
-            url: "/songs/sample1.mp3",
-            duration: "03:12"
+            title: "Die With A Smile",
+            artist: "Lady Gaga & Bruno Mars",
+            url: "/songs/Die_With_A_Smile.mp3",
+            duration: "04:11"
         },
         {
             id: 2,
-            title: "Song 2 - Sample",
-            artist: "SoundHelix",
-            url: "/songs/sample2.mp3",
-            duration: "04:05"
+            title: "I Wanna Be Yours",
+            artist: "Arctic Monkeys",
+            url: "/songs/I_Wanna_Be_Yours.mp3",
+            duration: "03:03"
+        },
+        {
+            id: 3,
+            title: "Just The Way You Are",
+            artist: "Bruno Mars",
+            url: "/songs/Just_Way_You_Are.mp3",
+            duration: "03:39"
         }
     ];
 
     const [currentSongIndex, setCurrentSongIndex] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
+
+    // Auto-play logic from params
+    useEffect(() => {
+        if (params?.autoPlay) {
+            const index = songs.findIndex(s => s.title.toLowerCase().includes(params.autoPlay.toLowerCase()));
+            if (index !== -1) {
+                setCurrentSongIndex(index);
+                setPlaying(true);
+            }
+        }
+    }, [params]);
 
     // Lazy initialization of Audio
     const audioRef = useRef(null);
@@ -539,7 +591,6 @@ const MusicApp = () => {
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
-                // Do NOT set to null
             }
         };
     }, []);
@@ -810,8 +861,10 @@ const SnakeGameApp = () => {
 
 const BrowserApp = ({ onOpenApp }) => {
     const { theme } = useTheme();
+
     return (
-        <div className="flex flex-col h-full bg-white/80">
+        <div className="flex flex-col h-full bg-white/80 relative">
+
             {/* Browser Bar */}
             <div className="p-3 bg-white/80 border-b border-gray-100 flex flex-col gap-2 shadow-sm z-10 backdrop-blur-md">
                 <div className="flex items-center gap-3">
@@ -871,7 +924,8 @@ const BrowserApp = ({ onOpenApp }) => {
                             <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-500 font-bold shrink-0 shadow-sm group-hover:scale-110 transition-transform">3</div>
                             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-1 group-hover:shadow-md transition-shadow">
                                 <h3 className="font-bold text-gray-700 mb-1">Comfy Mode</h3>
-                                <p className="text-gray-500 text-sm leading-relaxed">You look beautiful in a dress, but even better in my hoodie.</p>
+                                <p className="text-gray-500 text-sm leading-relaxed mb-2">You look beautiful in a dress, but even better in my hoodie.</p>
+                                <CuteButton size="sm" onClick={() => onOpenApp && onOpenApp('hoodie_proof')} className="text-xs py-1 px-3">See Proof 📸</CuteButton>
                             </div>
                         </div>
 
@@ -888,7 +942,7 @@ const BrowserApp = ({ onOpenApp }) => {
     );
 };
 
-const LoveQuestApp = () => {
+const LoveQuestApp = ({ onOpenApp }) => {
     const { theme } = useTheme();
     const [gameState, setGameState] = useState('welcome'); // welcome, playing, reward, final
     const [level, setLevel] = useState(0);
@@ -905,7 +959,7 @@ const LoveQuestApp = () => {
             hint: "(Type 'cafe' for demo)",
             answer: ["cafe", "coffee", "starbucks"],
             memory: "I was so nervous, but your smile made everything perfect.",
-            rewardImage: "https://images.unsplash.com/photo-1504194569255-d8641bc3864a?w=400",
+            rewardImage: imgCafe,
             bg: "bg-orange-100"
         },
         {
@@ -916,43 +970,90 @@ const LoveQuestApp = () => {
             gridSize: 25,
             targetIndex: 12,
             memory: "You healed my heart just like you found this one.",
-            rewardImage: "https://images.unsplash.com/photo-1518199266791-5375a83190b9?w=400",
+            rewardImage: imgUsGoofy,
             bg: theme.id === 'plant' ? "bg-emerald-100" : "bg-pink-100"
         },
         {
             id: 3,
             type: 'quiz',
-            title: "Level 3: The Favorite",
-            question: "What is my absolute favorite food? 🍕🍔",
-            hint: "(Type 'pizza' for demo)",
-            answer: ["pizza", "burger", "sushi"],
-            memory: "I love sharing meals (and slices) with you.",
-            rewardImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400",
-            bg: "bg-yellow-100"
+            title: "Level 3: Cozy Mode",
+            question: "What is my favorite outfit on you? 🧥",
+            hint: "(It's warm and comfy)",
+            answer: ["hoodie", "jacket", "sweater"],
+            memory: "You look absolutely adorable in my hoodie. Best view ever.",
+            rewardImage: imgHoodie,
+            bg: "bg-purple-100"
         },
         {
             id: 4,
             type: 'quiz',
-            title: "Level 4: The Song",
-            question: "Which artist do we always sing along to?",
-            hint: "(Rhymes with Bed Sheeran)",
-            answer: ["ed sheeran", "taylor swift", "adele", "weeknd"],
-            memory: "Every love song makes sense now that I have you.",
-            rewardImage: "https://images.unsplash.com/photo-1514525253440-b393452e8d03?w=400",
-            bg: "bg-purple-100"
+            title: "Level 4: Adventure Time",
+            question: "Where did we go on a boat ride? 🛶",
+            hint: "(Lake / Gregory)",
+            answer: ["gregory", "lake", "nuwara", "eliya", "boat"],
+            memory: "Floating with you felt like a dream.",
+            rewardImage: imgBoat,
+            bg: "bg-blue-100"
+        },
+        {
+            id: 5,
+            type: 'quiz',
+            title: "Level 5: Spiritual Journey",
+            question: "Where did we go for a spiritual trip? 🕉️",
+            hint: "(Temple / Kandy)",
+            answer: ["kovil", "temple", "kandy", "tooth"],
+            memory: "Praying for our forever.",
+            rewardImage: imgKovil,
+            bg: "bg-yellow-100"
+        },
+        {
+            id: 6,
+            type: 'quiz',
+            title: "Level 6: Our Song",
+            question: "Which Bruno Mars song goes 'If the world was ending...'? 🎶",
+            hint: "(Die with a ...)",
+            answer: ["smile", "die", "bruno"],
+            memory: "I'd smile because I'm with you.",
+            rewardImage: imgFun,
+            bg: "bg-rose-100"
+        },
+        {
+            id: 7,
+            type: 'quiz',
+            title: "Level 7: True Colors",
+            question: "What is my favorite color?",
+            hint: "Guessed wrong? (Hint: Think of the sky/ocean 🌊)",
+            hideHintUntilError: true,
+            answer: ["blue"],
+            memory: "Like the ocean, my love for you is deep and endless.",
+            rewardImage: imgBeach,
+            bg: "bg-blue-200"
         }
     ];
 
+    // Quiz Logic
     const handleQuizSubmit = (e) => {
         e.preventDefault();
         const currentQ = levels[level];
         if (currentQ.answer.some(a => input.toLowerCase().includes(a))) {
             setGameState('reward');
             setError("");
+
+            // Auto-play music for Song Level
+            if (currentQ.id === 6 && onOpenApp) {
+                onOpenApp('music', { autoPlay: 'Die With A Smile' });
+            }
+
         } else {
             setError("Not quite! Try again " + theme.icon);
         }
     };
+
+    // Reset error when changing levels
+    useEffect(() => {
+        setError("");
+        setInput("");
+    }, [level]);
 
     const nextLevel = () => {
         setInput("");
@@ -1055,7 +1156,9 @@ const LoveQuestApp = () => {
                 {/* Quiz Logic */}
                 {current.type === 'quiz' && (
                     <form onSubmit={handleQuizSubmit} className="w-full max-w-[240px] flex flex-col gap-4">
-                        <p className="text-xs text-center text-gray-400 italic">{current.hint}</p>
+                        {(!current.hideHintUntilError || error) && (
+                            <p className="text-xs text-center text-gray-400 italic">{current.hint}</p>
+                        )}
                         <input
                             type="text"
                             value={input}
@@ -1104,6 +1207,12 @@ const PumpkinApp = () => (
     </div>
 );
 
+const HoodieProofApp = () => (
+    <div className="w-full h-full bg-black flex items-center justify-center p-2">
+        <img src={imgHoodie} alt="Evidence" className="max-w-full max-h-full rounded-lg object-contain shadow-2xl" />
+    </div>
+);
+
 const APP_DATA = [
     { id: 'notes', title: 'Love Note', icon: FileText, color: 'text-yellow-500', bg: 'bg-yellow-100', component: NotesApp, initialPos: { x: 50, y: 50 } },
     { id: 'gallery', title: 'Us Gallery', icon: ImageIcon, color: 'text-blue-500', bg: 'bg-blue-100', component: GalleryApp, initialPos: { x: 100, y: 80 } },
@@ -1115,6 +1224,7 @@ const APP_DATA = [
     { id: 'quest', title: 'Love Quest', icon: Map, color: 'text-rose-500', bg: 'bg-rose-100', component: LoveQuestApp, initialPos: { x: 250, y: 100 }, width: "w-[90vw] md:w-[550px]" },
     { id: 'recycle', title: 'Recycle Bin', icon: Trash2, color: 'text-gray-500', bg: 'bg-gray-200', component: RecycleBinApp, initialPos: { x: 300, y: 200 } },
     { id: 'pumpkin', title: 'My Pumpkin', icon: Heart, color: 'text-orange-500', bg: 'bg-orange-100', component: PumpkinApp, initialPos: { x: 150, y: 150 }, width: "w-[90vw] md:w-[800px]" },
+    { id: 'hoodie_proof', title: 'Evidence 📸', icon: ImageIcon, color: 'text-pink-500', bg: 'bg-pink-100', component: HoodieProofApp, initialPos: { x: 400, y: 150 }, hidden: true },
     { id: 'crash', title: "Don't Click", icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-100', component: null, initialPos: { x: 600, y: 400 }, isAction: true }, // Special case for BSOD
 ];
 
@@ -1147,7 +1257,7 @@ const LoveOS = () => {
         const startX = Math.max(20, (window.innerWidth - gridWidth) / 2);
         const startY = 100;
 
-        const initialIcons = APP_DATA.map((app, index) => ({
+        const initialIcons = APP_DATA.filter(a => !a.hidden).map((app, index) => ({
             id: app.id,
             x: startX + (index % cols) * iconSpacingX,
             y: startY + Math.floor(index / cols) * 130,
@@ -1155,7 +1265,7 @@ const LoveOS = () => {
         setDesktopIcons(initialIcons);
     }, []);
 
-    const openApp = (appId) => {
+    const openApp = (appId, params = {}) => {
         // Show taskbar temporarily
         setTaskbarVisible(true);
         setTimeout(() => setTaskbarVisible(false), 5000);
@@ -1169,7 +1279,8 @@ const LoveOS = () => {
         }
 
         if (windows.find(w => w.id === app.id)) {
-            setWindows(windows.map(w => w.id === app.id ? { ...w, isMinimized: false } : w));
+            // Update params if window exists (important for triggering music if already open)
+            setWindows(windows.map(w => w.id === app.id ? { ...w, isMinimized: false, params } : w));
             setActiveId(app.id);
         } else {
             // Dynamic Size: 75% of screen (Default)
@@ -1177,11 +1288,12 @@ const LoveOS = () => {
             let height = Math.min(window.innerHeight * 0.75, 800); // Cap max height
 
             // Restore specific sizes for "compact" apps
-            if (['notes', 'chat', 'music', 'coupons', 'recycle', 'snake'].includes(app.id)) {
+            if (['notes', 'chat', 'music', 'coupons', 'recycle', 'snake', 'hoodie_proof'].includes(app.id)) {
                 width = 400;
                 height = 500;
                 if (app.id === 'notes') { width = 320; height = 450; }
                 if (app.id === 'snake') { width = 350; height = 400; }
+                if (app.id === 'hoodie_proof') { width = 400; height = 600; }
             }
 
             // Center Logic
@@ -1193,7 +1305,8 @@ const LoveOS = () => {
                 zIndex: windows.length + 1,
                 // Add some randomness for subsequent windows so they don't stack perfectly on top
                 pos: { x: x + (windows.length * 20), y: y + (windows.length * 20) },
-                size: { width, height }
+                size: { width, height },
+                params
             }]);
             setActiveId(app.id);
         }
@@ -1383,7 +1496,7 @@ const LoveOS = () => {
                     onMove={updateWindowPos}
                     onResize={updateWindowSize}
                 >
-                    {win.component ? <win.component onOpenApp={openApp} /> : null}
+                    {win.component ? <win.component onOpenApp={openApp} params={win.params} /> : null}
                 </WindowFrame>
             ))}
 
